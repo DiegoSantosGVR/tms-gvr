@@ -1,0 +1,14 @@
+{
+  "name": "tms-gvr-proxy",
+  "version": "1.0.0",
+  "description": "Proxy de cotação de frete — JAMEF e BRASPRESS — GVR Home",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {}
+}
