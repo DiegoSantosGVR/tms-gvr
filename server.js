@@ -105,13 +105,54 @@ function horaAgora() {
 
 // ① Login JAMEF via AWS Cognito
 async function jamefLogin(body) {
-  const payload = JSON.stringify({
-    AuthFlow: 'USER_PASSWORD_AUTH',
-    ClientId: '75lv5or3fujfp3trhse7bh508m',
-    AuthParameters: { USERNAME: body.email, PASSWORD: body.senha }
-  });
+  // JAMEF usa Cognito com USER_SRP_AUTH (SRP desabilitado para chamada direta)
+  // Alternativa: simular o login via portal web da JAMEF para obter os cookies
+  // O portal envia as credenciais para o Amplify SDK no browser — replicamos via API interna
+
+  // Tenta primeiro via portal JAMEF (endpoint interno de autenticação)
+  const formBody = `username=${encodeURIComponent(body.email)}&password=${encodeURIComponent(body.senha)}`;
 
   const result = await httpsRequest({
+    hostname: 'cliente.jamef.com.br',
+    path:     '/api/auth/login',
+    method:   'POST',
+    headers: {
+      'Content-Type':   'application/x-www-form-urlencoded',
+      'Accept':         'application/json',
+      'Origin':         'https://cliente.jamef.com.br',
+      'Referer':        'https://cliente.jamef.com.br/login',
+      'User-Agent':     'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+      'Content-Length': Buffer.byteLength(formBody)
+    }
+  }, formBody);
+
+  // Se o portal retornar tokens direto
+  if (result.status === 200) {
+    try {
+      const data = JSON.parse(result.body);
+      if (data.IdToken || data.idToken || data.AuthenticationResult) {
+        const auth = data.AuthenticationResult || data;
+        return {
+          IdToken:      auth.IdToken     || auth.idToken,
+          AccessToken:  auth.AccessToken || auth.accessToken,
+          RefreshToken: auth.RefreshToken|| auth.refreshToken,
+          ExpiresIn:    auth.ExpiresIn   || 7200
+        };
+      }
+    } catch {}
+  }
+
+  // Fallback: Cognito com CUSTOM_AUTH
+  const payload = JSON.stringify({
+    AuthFlow: 'CUSTOM_AUTH',
+    ClientId: '75lv5or3fujfp3trhse7bh508m',
+    AuthParameters: {
+      USERNAME: body.email,
+      CHALLENGE_NAME: 'SRP_A'
+    }
+  });
+
+  const result2 = await httpsRequest({
     hostname: 'cognito-idp.us-east-1.amazonaws.com',
     path: '/', method: 'POST',
     headers: {
@@ -121,16 +162,18 @@ async function jamefLogin(body) {
     }
   }, payload);
 
-  const data = JSON.parse(result.body);
-  if (result.status !== 200) {
-    const msgs = {
-      'NotAuthorizedException':    'E-mail ou senha JAMEF incorretos.',
-      'UserNotFoundException':     'Usuário JAMEF não encontrado.',
-      'UserNotConfirmedException': 'Conta JAMEF não confirmada.'
-    };
-    throw new Error(msgs[data.__type] || data.message || 'Erro de autenticação JAMEF');
+  const data2 = JSON.parse(result2.body);
+
+  // Se nenhum fluxo funcionar, instrui usar os tokens diretamente
+  if (result2.status !== 200) {
+    throw new Error(
+      'LOGIN_TOKEN_REQUIRED:O Cognito da JAMEF requer autenticação via browser. ' +
+      'Por favor, faça login no portal cliente.jamef.com.br, abra o DevTools, ' +
+      'vá em Application > Cookies e copie os valores de idToken e accessToken.'
+    );
   }
-  return data.AuthenticationResult;
+
+  return data2.AuthenticationResult;
 }
 
 // ② Renovar token JAMEF
