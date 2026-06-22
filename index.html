@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TMS GVR — Cotação de Frete</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --red:        #C8102E;
+    --red-dark:   #9e0c23;
+    --red-light:  #fdf0f2;
+    --blue:       #1B3F6E;
+    --blue-light: #eef3fa;
+    --gray-50:    #f8f8f7;
+    --gray-100:   #efefed;
+    --gray-200:   #dedcda;
+    --gray-400:   #9e9c99;
+    --gray-600:   #5c5a57;
+    --gray-800:   #2c2b29;
+    --green:      #1a7f4b;
+    --green-bg:   #edf7f2;
+    --amber:      #b45309;
+    --amber-bg:   #fffbeb;
+    --shadow-sm:  0 1px 3px rgba(0,0,0,.08);
+    --shadow-md:  0 4px 16px rgba(0,0,0,.10);
+    --radius:     10px;
+    --font:       'Segoe UI', system-ui, sans-serif;
+  }
+  body { font-family: var(--font); background: var(--gray-50); color: var(--gray-800); min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ── HEADER ── */
+  header { background: var(--blue); padding: 0 32px; height: 56px; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--shadow-md); }
+  .logo { display: flex; align-items: center; gap: 14px; }
+  .logo-gvr { font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -.5px; }
+  .logo-sub { font-size: 12px; color: rgba(255,255,255,.6); }
+  .logo-sep { width: 1px; height: 22px; background: rgba(255,255,255,.2); }
+  #user-info { display: none; align-items: center; gap: 10px; font-size: 12px; color: rgba(255,255,255,.7); }
+  #user-info strong { color: #fff; }
+  .badge { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .badge-green { background: #dcfce7; color: #166534; }
+  .badge-amber { background: #fef3c7; color: #92400e; }
+  #btn-logout { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.25); border-radius: 6px; padding: 4px 10px; font-size: 12px; color: #fff; cursor: pointer; transition: all .15s; }
+  #btn-logout:hover { background: rgba(255,255,255,.2); }
+
+  /* ── MAIN ── */
+  main { flex: 1; padding: 28px 20px; max-width: 900px; margin: 0 auto; width: 100%; }
+
+  /* ── CARD ── */
+  .card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-md); border: 1px solid var(--gray-100); overflow: hidden; margin-bottom: 20px; }
+  .card-header { padding: 16px 22px; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--gray-100); }
+  .card-header.blue { background: var(--blue); color: #fff; }
+  .card-header.red  { background: var(--red);  color: #fff; }
+  .card-header.gray { background: var(--gray-50); color: var(--gray-800); }
+  .card-body { padding: 22px; }
+
+  /* ── TABS ── */
+  .tabs { display: flex; border-bottom: 2px solid var(--gray-100); margin-bottom: 20px; }
+  .tab { padding: 10px 20px; font-size: 13px; font-weight: 600; color: var(--gray-400); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .15s; }
+  .tab.active { color: var(--blue); border-color: var(--blue); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── FORM ── */
+  .form-grid { display: grid; gap: 14px; }
+  .g2 { grid-template-columns: 1fr 1fr; }
+  .g3 { grid-template-columns: 1fr 1fr 1fr; }
+  .g4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 11px; font-weight: 700; color: var(--gray-600); text-transform: uppercase; letter-spacing: .5px; }
+  .field input, .field select { border: 1.5px solid var(--gray-200); border-radius: 7px; padding: 9px 11px; font-size: 14px; color: var(--gray-800); background: #fff; transition: border-color .15s, box-shadow .15s; font-family: var(--font); width: 100%; }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(27,63,110,.10); }
+  .field input.mono { font-family: 'Courier New', monospace; font-size: 13px; }
+  .field-hint { font-size: 11px; color: var(--gray-400); }
+  .section-label { font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: .6px; padding: 14px 0 6px; border-bottom: 1px solid var(--gray-100); margin-bottom: 2px; }
+
+  /* ── BOTÕES ── */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 22px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all .18s; font-family: var(--font); }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-primary:hover { background: #142f54; }
+  .btn-primary:disabled { background: var(--gray-200); color: var(--gray-400); cursor: not-allowed; }
+  .btn-outline { background: #fff; color: var(--blue); border: 1.5px solid var(--blue); }
+  .btn-outline:hover { background: var(--blue-light); }
+  .btn-sm { padding: 6px 14px; font-size: 12px; }
+  .btn-danger { background: var(--red); color: #fff; }
+
+  /* ── SPINNER ── */
+  .spinner { width: 16px; height: 16px; border: 2.5px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── ALERTAS ── */
+  .alert { border-radius: 8px; padding: 10px 14px; font-size: 13px; display: none; margin-top: 12px; line-height: 1.5; }
+  .alert-error  { background: #fff0f2; border: 1px solid #ffc1cb; color: #9e0c23; }
+  .alert-warn   { background: var(--amber-bg); border: 1px solid #fcd34d; color: var(--amber); }
+  .alert-info   { background: var(--blue-light); border: 1px solid #bfdbfe; color: var(--blue); }
+  .alert-success{ background: var(--green-bg); border: 1px solid #6ee7b7; color: var(--green); }
+
+  /* ── CREDENCIAIS ── */
+  .cred-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .cred-box { border: 1.5px solid var(--gray-200); border-radius: 10px; padding: 16px; transition: border-color .15s; }
+  .cred-box:focus-within { border-color: var(--blue); }
+  .cred-title { font-size: 13px; font-weight: 700; color: var(--gray-800); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .cred-status { width: 8px; height: 8px; border-radius: 50%; background: var(--gray-200); flex-shrink: 0; }
+  .cred-status.ok { background: var(--green); }
+  .cred-status.err { background: var(--red); }
+
+  /* ── RESULTADO COMPARAÇÃO ── */
+  #resultado { display: none; margin-bottom: 20px; }
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .compare-card { border-radius: 10px; border: 2px solid var(--gray-200); overflow: hidden; transition: border-color .2s; }
+  .compare-card.melhor { border-color: var(--green); }
+  .compare-card.pior   { border-color: var(--gray-200); opacity: .85; }
+  .compare-header { padding: 12px 16px; font-weight: 700; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
+  .compare-header.jamef     { background: #E8F0FA; color: var(--blue); }
+  .compare-header.braspress  { background: #FFF0F2; color: var(--red); }
+  .compare-body { padding: 16px; background: #fff; }
+  .compare-row { display: flex; justify-content: space-between; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--gray-100); font-size: 13px; }
+  .compare-row:last-child { border-bottom: none; }
+  .compare-row .lbl { color: var(--gray-600); }
+  .compare-row .val { font-weight: 700; color: var(--gray-800); }
+  .compare-row .val.green { color: var(--green); font-size: 18px; }
+  .compare-row .val.red-val { color: var(--red); font-size: 18px; }
+  .badge-melhor { background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+  .badge-pior   { background: var(--gray-100); color: var(--gray-600); padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+  .compare-erro { padding: 16px; background: #fff0f2; color: #9e0c23; font-size: 13px; border-top: 1px solid #ffc1cb; }
+
+  /* ── KPI BAR ── */
+  .kpi-bar { background: var(--blue); border-radius: 10px; padding: 16px 22px; color: #fff; display: none; margin-bottom: 20px; }
+  .kpi-bar .title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: rgba(255,255,255,.6); margin-bottom: 8px; }
+  .kpi-inner { display: flex; gap: 32px; flex-wrap: wrap; }
+  .kpi-item .kv { font-size: 22px; font-weight: 800; }
+  .kpi-item .kl { font-size: 11px; color: rgba(255,255,255,.6); }
+  .kpi-item .kv.warn { color: #fcd34d; }
+  .kpi-item .kv.ok   { color: #6ee7b7; }
+
+  /* ── LOADING ── */
+  #loading-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,.75); backdrop-filter: blur(2px); z-index: 100; align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
+  #loading-overlay .spin-big { width: 42px; height: 42px; border: 4px solid var(--gray-100); border-top-color: var(--blue); border-radius: 50%; animation: spin .8s linear infinite; }
+  #loading-overlay p { font-size: 14px; color: var(--gray-600); font-weight: 500; }
+
+  /* ── LOGIN ── */
+  #screen-login { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 70vh; }
+  #screen-login .card { width: 100%; max-width: 460px; }
+  .login-header { text-align: center; margin-bottom: 24px; }
+  .login-header .mark { font-size: 28px; font-weight: 800; color: var(--blue); }
+  .login-header .sub { font-size: 13px; color: var(--gray-400); margin-top: 4px; }
+
+  /* ── RAW JSON ── */
+  .raw-box { background: #1e1e2e; border-radius: 8px; padding: 14px; margin-top: 12px; display: none; }
+  .raw-box pre { font-size: 11px; color: #cdd6f4; overflow-x: auto; line-height: 1.5; }
+  .btn-raw { background: none; border: none; font-size: 11px; color: var(--gray-400); cursor: pointer; text-decoration: underline; margin-top: 8px; }
+
+  @media (max-width: 640px) {
+    .g2, .g3, .g4, .cred-grid, .compare-grid { grid-template-columns: 1fr; }
+    main { padding: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-gvr">GVR Home</div>
+    <div class="logo-sep"></div>
+    <div class="logo-sub">TMS · Cotação de Frete</div>
+  </div>
+  <div id="user-info">
+    <strong id="user-name-hdr"></strong>
+    <span class="badge badge-green">JAMEF</span>
+    <span class="badge" id="badge-braspress" style="background:#fef3c7;color:#92400e">BRASPRESS</span>
+    <button id="btn-logout" onclick="logout()">Sair</button>
+  </div>
+</header>
+
+<div id="loading-overlay">
+  <div class="spin-big"></div>
+  <p id="loading-msg">Consultando transportadoras...</p>
+</div>
+
+<main>
+
+  <!-- ═══ TELA LOGIN ═══ -->
+  <div id="screen-login">
+    <div class="login-header">
+      <div class="mark">TMS GVR</div>
+      <div class="sub">Informe suas credenciais de acesso às transportadoras</div>
+    </div>
+    <div class="card">
+      <div class="card-header blue">🔐 Credenciais de acesso</div>
+      <div class="card-body">
+
+        <div class="cred-grid">
+          <!-- JAMEF -->
+          <div class="cred-box" id="cred-jamef">
+            <div class="cred-title">
+              <div class="cred-status" id="st-jamef"></div>
+              JAMEF
+            </div>
+            <div class="form-grid">
+              <div class="field">
+                <label>E-mail</label>
+                <input type="email" id="jamef-email" placeholder="seu@email.com.br" autocomplete="email">
+              </div>
+              <div class="field">
+                <label>Senha</label>
+                <input type="password" id="jamef-senha" placeholder="••••••••"
+                  onkeydown="if(event.key==='Enter') fazerLogin()">
+              </div>
+            </div>
+          </div>
+
+                    <!-- BRASPRESS -->
+          <div class="cred-box" id="cred-bp">
+            <div class="cred-title">
+              <div class="cred-status" id="st-bp"></div>
+              BRASPRESS
+            </div>
+            <div class="alert alert-info" style="display:block; font-size:12px; margin-bottom:12px; padding:10px 12px; line-height:1.6">
+              Clique no botão abaixo para abrir o portal da BRASPRESS.<br>
+              Faça login normalmente — o TMS conecta automaticamente.
+            </div>
+            <button onclick="conectarBraspress()" id="btn-bp-login"
+              style="width:100%;padding:10px;background:#C8102E;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+              <span>🔗</span> Conectar BRASPRESS
+            </button>
+            <div id="bp-status-msg" style="display:none;margin-top:8px;font-size:12px;color:var(--green);font-weight:600;text-align:center">
+              ✅ BRASPRESS conectada com sucesso!
+            </div>
+            <input type="hidden" id="bp-jsessionid">
+          </div>
+        </div>
+
+        <div class="alert alert-error" id="alert-login"></div>
+
+        <div style="margin-top:18px; display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="fazerLogin()" id="btn-login">
+            <div class="spinner" id="spin-login"></div>
+            <span id="btn-login-txt">Entrar e começar a cotar</span>
+          </button>
+          <span style="font-size:12px; color:var(--gray-400)">Proxy local: <code>localhost:3000</code></span>
+        </div>
+
+        <div class="alert alert-info" style="display:block; margin-top:14px; font-size:12px;">
+          💡 Certifique-se que o proxy está rodando: <strong>node server.js</strong> no terminal antes de entrar.
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TELA COTAÇÃO ═══ -->
+  <div id="screen-cotacao" style="display:none">
+
+    <!-- KPI BAR -->
+    <div class="kpi-bar" id="kpi-bar">
+      <div class="title">Última cotação · KPIs GVR</div>
+      <div class="kpi-inner">
+        <div class="kpi-item"><div class="kv" id="k-frete">—</div><div class="kl">Melhor frete</div></div>
+        <div class="kpi-item"><div class="kv" id="k-prazo">—</div><div class="kl">Prazo</div></div>
+        <div class="kpi-item"><div class="kv" id="k-kpi">—</div><div class="kl">Frete / NF%</div></div>
+        <div class="kpi-item"><div class="kv" id="k-economia">—</div><div class="kl">Economia vs opção mais cara</div></div>
+      </div>
+    </div>
+
+    <!-- RESULTADO COMPARAÇÃO -->
+    <div id="resultado">
+      <div class="card">
+        <div class="card-header gray">📊 Comparação de cotações</div>
+        <div class="card-body" style="padding:16px">
+          <div class="compare-grid" id="compare-grid"></div>
+          <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap">
+            <button class="btn btn-outline btn-sm" onclick="novaCotacao()">Nova cotação</button>
+            <button class="btn-raw" onclick="toggleRaw()">Ver JSON completo</button>
+          </div>
+          <div class="raw-box" id="raw-box"><pre id="raw-content"></pre></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FORMULÁRIO -->
+    <div class="card">
+      <div class="card-header blue">📦 Dados da cotação</div>
+      <div class="card-body">
+
+        <div class="tabs">
+          <div class="tab active" onclick="switchTab('rota', this)">Rota e destinatário</div>
+          <div class="tab" onclick="switchTab('carga', this)">Carga e dimensões</div>
+        </div>
+
+        <!-- ABA ROTA -->
+        <div class="tab-content active" id="tab-rota">
+          <div class="section-label">Origem e destino — Códigos de região JAMEF</div>
+          <div class="form-grid g2" style="margin-top:8px">
+            <div class="field">
+              <label>Região origem</label>
+              <input type="text" id="f-origem" placeholder="ex: SP0016" class="mono"
+                oninput="this.value=this.value.toUpperCase()">
+              <div class="field-hint">SP0016 = São Paulo capital · use o buscador do portal JAMEF</div>
+            </div>
+            <div class="field">
+              <label>Região destino</label>
+              <input type="text" id="f-destino" placeholder="ex: SP0249" class="mono"
+                oninput="this.value=this.value.toUpperCase()">
+              <div class="field-hint">SP0249 = Barueri</div>
+            </div>
+          </div>
+
+          <div class="section-label" style="margin-top:8px">CEP — BRASPRESS</div>
+          <div class="form-grid g2" style="margin-top:8px">
+            <div class="field">
+              <label>CEP origem</label>
+              <input type="text" id="f-cep-orig" placeholder="00000-000" class="mono"
+                oninput="this.value=formatarCEP(this.value)" maxlength="9">
+            </div>
+            <div class="field">
+              <label>CEP destino</label>
+              <input type="text" id="f-cep-dest" placeholder="00000-000" class="mono"
+                oninput="this.value=formatarCEP(this.value)" maxlength="9">
+            </div>
+          </div>
+
+          <div class="section-label" style="margin-top:8px">Destinatário</div>
+          <div class="form-grid g2" style="margin-top:8px">
+            <div class="field">
+              <label>CNPJ / CPF destinatário</label>
+              <input type="text" id="f-dest-cnpj" placeholder="00.000.000/0000-00" class="mono"
+                oninput="this.value=formatarCNPJ(this.value)">
+            </div>
+            <div class="field">
+              <label>Tipo de frete</label>
+              <select id="f-tipo-frete">
+                <option value="1">CIF — frete por conta do remetente</option>
+                <option value="2">FOB — frete por conta do destinatário</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- ABA CARGA -->
+        <div class="tab-content" id="tab-carga">
+          <div class="section-label">Produto</div>
+          <div class="form-grid g3" style="margin-top:8px">
+            <div class="field">
+              <label>Código produto</label>
+              <input type="text" id="f-produto" value="010199" class="mono">
+              <div class="field-hint">010199 = carga geral</div>
+            </div>
+            <div class="field">
+              <label>Embalagem</label>
+              <select id="f-embalagem">
+                <option value="CX">CX — Caixa</option>
+                <option value="VL">VL — Volume</option>
+                <option value="PC">PC — Peça</option>
+                <option value="FD">FD — Fardo</option>
+                <option value="EN">EN — Engradado</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Qtd. volumes</label>
+              <input type="number" id="f-qtd" value="1" min="1" step="1" oninput="calcCubado()">
+            </div>
+          </div>
+
+          <div class="section-label" style="margin-top:8px">Peso e dimensões</div>
+          <div class="form-grid g4" style="margin-top:8px">
+            <div class="field">
+              <label>Peso real (kg)</label>
+              <input type="number" id="f-peso" placeholder="0.00" step="0.01" oninput="calcCubado()">
+            </div>
+            <div class="field">
+              <label>Comprimento (m)</label>
+              <input type="number" id="f-comp" placeholder="0.00" step="0.01" oninput="calcCubado()">
+            </div>
+            <div class="field">
+              <label>Largura (m)</label>
+              <input type="number" id="f-larg" placeholder="0.00" step="0.01" oninput="calcCubado()">
+            </div>
+            <div class="field">
+              <label>Altura (m)</label>
+              <input type="number" id="f-alt" placeholder="0.00" step="0.01" oninput="calcCubado()">
+            </div>
+          </div>
+          <div class="alert alert-info" id="alert-cubado" style="margin-top:10px"></div>
+
+          <div class="section-label" style="margin-top:8px">Nota fiscal</div>
+          <div class="form-grid g2" style="margin-top:8px">
+            <div class="field">
+              <label>Valor da mercadoria (R$)</label>
+              <input type="number" id="f-valor" placeholder="0.00" step="0.01">
+            </div>
+            <div class="field">
+              <label>Modal / tipo de transporte</label>
+              <select id="f-modal">
+                <option value="R">R — Rodoviário</option>
+                <option value="A">A — Aéreo</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-error" id="alert-cotacao" style="margin-top:16px"></div>
+
+        <div style="margin-top:20px; display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="fazerCotacao()" id="btn-cotar" style="min-width:220px">
+            <div class="spinner" id="spin-cotar"></div>
+            <span id="btn-cotar-txt">🔍 Cotar JAMEF + BRASPRESS</span>
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="limpar()">Limpar</button>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /screen-cotacao -->
+</main>
+
+<script>
+// ═══════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════
+const PROXY = 'http://localhost:3000';
+
+// ═══════════════════════════════════════════════
+// SESSÃO
+// ═══════════════════════════════════════════════
+let sess = {
+  jamef: { idToken: null, accessToken: null, refreshToken: null, expAt: null },
+  braspress: { usuario: null, senha: null }
+};
+let ultimoCampos = null;
+
+// ═══════════════════════════════════════════════
+// UTILITÁRIOS
+// ═══════════════════════════════════════════════
+const fmt    = v => v != null ? 'R$ ' + Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2}) : '—';
+const fmtPct = v => v != null ? Number(v).toFixed(2) + '%' : '—';
+const now    = () => Math.floor(Date.now()/1000);
+
+function loading(msg) { document.getElementById('loading-overlay').style.display='flex'; document.getElementById('loading-msg').textContent=msg||'Aguarde...'; }
+function stopLoading() { document.getElementById('loading-overlay').style.display='none'; }
+function showAlert(id,msg) { const el=document.getElementById(id); el.innerHTML=msg; el.style.display='block'; }
+function hideAlert(id) { document.getElementById(id).style.display='none'; }
+
+function formatarCNPJ(v) {
+  const d=v.replace(/\D/g,'').slice(0,14);
+  if(d.length<=2) return d; if(d.length<=5) return d.slice(0,2)+'.'+d.slice(2);
+  if(d.length<=8) return d.slice(0,2)+'.'+d.slice(2,5)+'.'+d.slice(5);
+  if(d.length<=12) return d.slice(0,2)+'.'+d.slice(2,5)+'.'+d.slice(5,8)+'/'+d.slice(8);
+  return d.slice(0,2)+'.'+d.slice(2,5)+'.'+d.slice(5,8)+'/'+d.slice(8,12)+'-'+d.slice(12);
+}
+function formatarCEP(v) {
+  const d=v.replace(/\D/g,'').slice(0,8);
+  if(d.length<=5) return d;
+  return d.slice(0,5)+'-'+d.slice(5);
+}
+function limparNum(v) { return v.replace(/\D/g,''); }
+
+function switchTab(id, el) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+}
+
+function calcCubado() {
+  const c=parseFloat(document.getElementById('f-comp').value)||0;
+  const l=parseFloat(document.getElementById('f-larg').value)||0;
+  const a=parseFloat(document.getElementById('f-alt').value)||0;
+  const q=parseInt(document.getElementById('f-qtd').value)||1;
+  const pr=parseFloat(document.getElementById('f-peso').value)||0;
+  const alerta=document.getElementById('alert-cubado');
+  if(c>0&&l>0&&a>0) {
+    const cub=c*l*a*300*q;
+    const cob=Math.max(pr,cub);
+    alerta.style.display='block';
+    alerta.innerHTML=`Peso cubado: <strong>${cub.toFixed(2)} kg</strong> &nbsp;·&nbsp; Peso real: <strong>${pr.toFixed(2)} kg</strong> &nbsp;·&nbsp; <strong>Cobrado: ${cob.toFixed(2)} kg</strong>${cub>pr?' (cubado prevalece)':' (real prevalece)'}`;
+  } else { alerta.style.display='none'; }
+}
+
+// ═══════════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════════
+async function fazerLogin() {
+  const email   = document.getElementById('jamef-email').value.trim();
+  const senha   = document.getElementById('jamef-senha').value;
+  const bpUser  = '';
+  const bpSenha = '';
+
+  if (!email || !senha) { showAlert('alert-login','Preencha e-mail e senha da JAMEF.'); return; }
+
+  hideAlert('alert-login');
+  document.getElementById('spin-login').style.display='block';
+  document.getElementById('btn-login-txt').textContent='Autenticando...';
+  document.getElementById('btn-login').disabled=true;
+  loading('Autenticando na JAMEF...');
+
+  try {
+    // Verifica se o proxy está rodando
+    try {
+      await fetch(`${PROXY}/health`);
+    } catch {
+      throw new Error('Proxy não encontrado em localhost:3000. Abra o terminal e rode: node server.js');
+    }
+
+    // Login JAMEF
+    const resp = await fetch(`${PROXY}/api/jamef/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, senha })
+    });
+    const data = await resp.json();
+    if (!resp.ok) {
+      const errMsg = data.erro || '';
+      // Servidor pediu tokens manuais
+      throw new Error(errMsg || 'Erro de autenticação JAMEF');
+    }
+
+    sess.jamef.idToken      = data.IdToken;
+    sess.jamef.accessToken  = data.AccessToken;
+    sess.jamef.refreshToken = data.RefreshToken;
+    sess.jamef.expAt        = now() + data.ExpiresIn;
+
+    // Salva JSESSIONID da BRASPRESS
+    const bpSession = document.getElementById('bp-jsessionid').value.trim();
+    if (bpSession) {
+      sess.braspress.jsessionid = bpSession;
+      document.getElementById('st-bp').className = 'cred-status ok';
+    }
+
+    const payload = JSON.parse(atob(data.IdToken.split('.')[1]));
+    document.getElementById('user-name-hdr').textContent = payload.name || email;
+    document.getElementById('st-jamef').className = 'cred-status ok';
+
+    mostrarCotacao();
+  } catch(e) {
+    document.getElementById('st-jamef').className = 'cred-status err';
+    showAlert('alert-login', '❌ ' + e.message);
+  } finally {
+    stopLoading();
+    document.getElementById('spin-login').style.display='none';
+    document.getElementById('btn-login-txt').textContent='Entrar e começar a cotar';
+    document.getElementById('btn-login').disabled=false;
+  }
+}
+
+async function renovarJamef() {
+  if (now() < sess.jamef.expAt - 60) return;
+  const resp = await fetch(`${PROXY}/api/jamef/refresh`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ refreshToken: sess.jamef.refreshToken })
+  });
+  const data = await resp.json();
+  if (!resp.ok) { logout(); throw new Error('Sessão JAMEF expirada'); }
+  sess.jamef.idToken     = data.IdToken;
+  sess.jamef.accessToken = data.AccessToken;
+  sess.jamef.expAt       = now() + data.ExpiresIn;
+}
+
+function mostrarCotacao() {
+  document.getElementById('screen-login').style.display='none';
+  document.getElementById('screen-cotacao').style.display='block';
+  document.getElementById('user-info').style.display='flex';
+  document.getElementById('badge-braspress').style.background = sess.braspress.jsessionid ? '#dcfce7' : '#fef3c7';
+  document.getElementById('badge-braspress').style.color      = sess.braspress.jsessionid ? '#166534' : '#92400e';
+}
+
+function logout() {
+  sess = { jamef: { idToken:null, accessToken:null, refreshToken:null, expAt:null }, braspress: { jsessionid:null } };
+  document.getElementById('screen-login').style.display='flex';
+  document.getElementById('screen-cotacao').style.display='none';
+  document.getElementById('user-info').style.display='none';
+  document.getElementById('resultado').style.display='none';
+  document.getElementById('kpi-bar').style.display='none';
+  document.getElementById('jamef-senha').value='';
+  document.getElementById('bp-senha').value='';
+  ['st-jamef','st-bp'].forEach(id=>document.getElementById(id).className='cred-status');
+}
+
+// ═══════════════════════════════════════════════
+// COTAÇÃO COMBINADA
+// ═══════════════════════════════════════════════
+async function fazerCotacao() {
+  hideAlert('alert-cotacao');
+
+  const origem   = document.getElementById('f-origem').value.trim().toUpperCase();
+  const destino  = document.getElementById('f-destino').value.trim().toUpperCase();
+  const cepOrig  = limparNum(document.getElementById('f-cep-orig').value);
+  const cepDest  = limparNum(document.getElementById('f-cep-dest').value);
+  const destCNPJ = limparNum(document.getElementById('f-dest-cnpj').value);
+  const pesoReal = parseFloat(document.getElementById('f-peso').value);
+  const comp     = parseFloat(document.getElementById('f-comp').value)||0;
+  const larg     = parseFloat(document.getElementById('f-larg').value)||0;
+  const alt      = parseFloat(document.getElementById('f-alt').value)||0;
+  const qtd      = parseInt(document.getElementById('f-qtd').value)||1;
+  const valor    = parseFloat(document.getElementById('f-valor').value);
+  const produto  = document.getElementById('f-produto').value.trim();
+  const embal    = document.getElementById('f-embalagem').value;
+  const tipoFrete= document.getElementById('f-tipo-frete').value;
+  const modal    = document.getElementById('f-modal').value;
+
+  if (!pesoReal||pesoReal<=0) return showAlert('alert-cotacao','Informe o peso real da mercadoria.');
+  if (!valor||valor<=0)       return showAlert('alert-cotacao','Informe o valor da mercadoria (NF).');
+  if (!destCNPJ||destCNPJ.length<11) return showAlert('alert-cotacao','Informe o CNPJ/CPF do destinatário.');
+
+  // Validações por transportadora
+  if (sess.jamef.idToken && !origem)  return showAlert('alert-cotacao','JAMEF requer código de região de origem (ex: SP0016).');
+  if (sess.jamef.idToken && !destino) return showAlert('alert-cotacao','JAMEF requer código de região de destino (ex: SP0249).');
+  if (sess.braspress.email && cepOrig.length < 7) return showAlert('alert-cotacao','BRASPRESS requer CEP de origem.');
+  if (sess.braspress.email && cepDest.length < 7) return showAlert('alert-cotacao','BRASPRESS requer CEP de destino.');
+
+  const pesoCubado = comp>0&&larg>0&&alt>0 ? parseFloat((comp*larg*alt*300*qtd).toFixed(2)) : pesoReal;
+
+  ultimoCampos = { pesoReal, pesoCubado, qtd, valor, comp, larg, alt, produto, embal, tipoFrete, modal,
+                   regiaoOrigem: origem, regiaoDestino: destino, cepOrigem: cepOrig, cepDestino: cepDest,
+                   cnpjDestinatario: destCNPJ };
+
+  document.getElementById('spin-cotar').style.display='block';
+  document.getElementById('btn-cotar-txt').textContent='Consultando...';
+  document.getElementById('btn-cotar').disabled=true;
+  loading('Consultando JAMEF e BRASPRESS simultaneamente...');
+
+  try {
+    await renovarJamef();
+
+    const body = {
+      jamef: {
+        idToken:      sess.jamef.idToken,
+        accessToken:  sess.jamef.accessToken,
+        ...ultimoCampos
+      }
+    };
+
+    if (sess.braspress.jsessionid) {
+      body.braspress = {
+        jsessionid: sess.braspress.jsessionid,
+        ...ultimoCampos
+      };
+    }
+
+    const resp = await fetch(`${PROXY}/api/cotacao`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.erro || `Erro ${resp.status}`);
+
+    exibirComparacao(data, valor);
+  } catch(e) {
+    showAlert('alert-cotacao', '❌ ' + e.message);
+  } finally {
+    stopLoading();
+    document.getElementById('spin-cotar').style.display='none';
+    document.getElementById('btn-cotar-txt').textContent='🔍 Cotar JAMEF + BRASPRESS';
+    document.getElementById('btn-cotar').disabled=false;
+  }
+}
+
+// ═══════════════════════════════════════════════
+// EXIBIÇÃO DOS RESULTADOS
+// ═══════════════════════════════════════════════
+function exibirComparacao(data, valorNF) {
+  const { resultados, erros } = data;
+  const grid = document.getElementById('compare-grid');
+  grid.innerHTML = '';
+
+  const transportadoras = ['JAMEF', 'BRASPRESS'];
+  const todos = [...resultados, ...erros.map(e=>({...e, _erro: true}))];
+
+  // Ordena: melhor (menor total) primeiro
+  const comValor = resultados.filter(r=>r.valorTotal!=null).sort((a,b)=>a.valorTotal-b.valorTotal);
+  const melhor = comValor[0]?.transportadora;
+  const economia = comValor.length >= 2 ? comValor[comValor.length-1].valorTotal - comValor[0].valorTotal : null;
+
+  // Renderiza cards na ordem fixa JAMEF / BRASPRESS
+  transportadoras.forEach(nome => {
+    const r = resultados.find(x=>x.transportadora===nome);
+    const e = erros.find(x=>x.transportadora===nome);
+    const isMelhor = r?.transportadora === melhor && comValor.length > 1;
+    const div = document.createElement('div');
+    div.className = 'compare-card ' + (r ? (isMelhor?'melhor':'pior') : 'pior');
+
+    if (r) {
+      const kpi = r.valorTotal && valorNF > 0 ? (r.valorTotal/valorNF*100).toFixed(2) : null;
+      const corVal = nome==='JAMEF' ? 'green' : 'red-val';
+      div.innerHTML = `
+        <div class="compare-header ${nome.toLowerCase()}">
+          <span>${nome}</span>
+          ${isMelhor ? '<span class="badge-melhor">✓ Melhor opção</span>' : (comValor.length>1?'<span class="badge-pior">Alternativa</span>':'')}
+        </div>
+        <div class="compare-body">
+          <div class="compare-row"><span class="lbl">Valor total</span><span class="val ${corVal}">${fmt(r.valorTotal)}</span></div>
+          <div class="compare-row"><span class="lbl">Frete</span><span class="val">${fmt(r.valorFrete)}</span></div>
+          <div class="compare-row"><span class="lbl">Impostos</span><span class="val">${fmt(r.valorImpostos)}</span></div>
+          <div class="compare-row"><span class="lbl">Prazo</span><span class="val">${formatarData(r.prazoEntrega)}</span></div>
+          <div class="compare-row"><span class="lbl">Peso cobrado</span><span class="val">${r.pesoCobrado?.toFixed(2)||'—'} kg</span></div>
+          ${kpi ? `<div class="compare-row"><span class="lbl">Frete / NF%</span><span class="val" style="color:${parseFloat(kpi)>15?'var(--red)':'var(--green)'}">${kpi}%</span></div>` : ''}
+          <div class="compare-row"><span class="lbl">Nº cotação</span><span class="val" style="font-size:12px;font-family:monospace">${r.numeroCotacao}</span></div>
+        </div>
+      `;
+    } else {
+      div.innerHTML = `
+        <div class="compare-header ${nome.toLowerCase()}">${nome}</div>
+        <div class="compare-erro">
+          ${e ? '⚠️ ' + e.erro : 'Credenciais não informadas — cotação não realizada.'}
+          ${nome==='BRASPRESS'&&!sess.braspress.usuario ? '<br><small>Adicione usuário e senha da BRASPRESS no login para comparar.</small>' : ''}
+        </div>
+      `;
+    }
+    grid.appendChild(div);
+  });
+
+  // KPI BAR
+  if (comValor.length > 0) {
+    const best = comValor[0];
+    const kpi = best.valorTotal && valorNF > 0 ? (best.valorTotal/valorNF*100).toFixed(2) : null;
+    document.getElementById('k-frete').textContent = fmt(best.valorTotal);
+    document.getElementById('k-prazo').textContent = formatarData(best.prazoEntrega);
+    document.getElementById('k-kpi').textContent   = kpi ? kpi+'%' : '—';
+    document.getElementById('k-kpi').className     = 'kv' + (kpi && parseFloat(kpi)>15 ? ' warn' : ' ok');
+    document.getElementById('k-economia').textContent = economia ? fmt(economia) : (comValor.length===1?'Apenas 1 cotação':'—');
+    document.getElementById('kpi-bar').style.display='block';
+  }
+
+  document.getElementById('raw-content').textContent = JSON.stringify(data, null, 2);
+  document.getElementById('resultado').style.display='block';
+  document.getElementById('resultado').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function formatarData(d) {
+  if (!d) return '—';
+  if (typeof d==='string'&&d.match(/^\d{8}$/)) return d.slice(6)+'/'+d.slice(4,6)+'/'+d.slice(0,4);
+  try { return new Date(d).toLocaleDateString('pt-BR'); } catch { return String(d); }
+}
+
+function toggleRaw() {
+  const b = document.getElementById('raw-box');
+  b.style.display = b.style.display==='block' ? 'none' : 'block';
+}
+
+function novaCotacao() {
+  document.getElementById('resultado').style.display='none';
+  document.getElementById('kpi-bar').style.display='none';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function limpar() {
+  ['f-origem','f-destino','f-cep-orig','f-cep-dest','f-dest-cnpj','f-peso','f-comp','f-larg','f-alt','f-valor'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('f-qtd').value='1';
+  document.getElementById('alert-cubado').style.display='none';
+  hideAlert('alert-cotacao');
+  document.getElementById('resultado').style.display='none';
+  document.getElementById('kpi-bar').style.display='none';
+}
+
+
+// ── BRASPRESS — Login via popup ──────────────────────────
+let bpPopup = null;
+let bpPollTimer = null;
+
+function conectarBraspress() {
+  // Abre popup com o portal da BRASPRESS
+  const w = 520, h = 680;
+  const left = Math.round(window.screenX + (window.outerWidth - w) / 2);
+  const top  = Math.round(window.screenY + (window.outerHeight - h) / 2);
+
+  bpPopup = window.open(
+    'https://www.braspress.com/area-do-cliente/minha-conta/',
+    'braspress_login',
+    `width=${w},height=${h},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes`
+  );
+
+  if (!bpPopup) {
+    showAlert('alert-login', '❌ Popup bloqueado pelo navegador. Permita popups para este site e tente novamente.');
+    return;
+  }
+
+  document.getElementById('btn-bp-login').textContent = '⏳ Aguardando login no popup...';
+  document.getElementById('btn-bp-login').disabled = true;
+
+  // Monitora o popup a cada 800ms
+  bpPollTimer = setInterval(() => {
+    try {
+      if (!bpPopup || bpPopup.closed) {
+        clearInterval(bpPollTimer);
+        // Se fechou sem conectar, restaura botão
+        if (!sess.braspress.jsessionid) {
+          document.getElementById('btn-bp-login').textContent = '🔗 Conectar BRASPRESS';
+          document.getElementById('btn-bp-login').disabled = false;
+        }
+        return;
+      }
+
+      // Tenta ler a URL atual do popup
+      const popupUrl = bpPopup.location.href;
+
+      // Quando chegar no blue.braspress.com, tenta capturar o cookie
+      if (popupUrl.includes('blue.braspress.com') || (popupUrl.includes('braspress.com') && popupUrl.includes('minha-conta'))) {
+        // Tenta ler os cookies do popup (funciona se mesma origem — não vai funcionar cross-origin)
+        // Fallback: pede ao proxy para buscar o cookie via sessão já autenticada
+        clearInterval(bpPollTimer);
+
+        // Popup logado — pede ao proxy para capturar o JSESSIONID
+        // O proxy faz uma requisição autenticada e devolve o cookie
+        clearInterval(bpPollTimer);
+        try {
+          // Tenta ler cookie do popup (funciona se mesma origem)
+          const cookies = bpPopup.document.cookie;
+          const match = cookies.match(/JSESSIONID=([^;]+)/);
+          if (match) {
+            sess.braspress.jsessionid = match[1];
+            document.getElementById('bp-jsessionid').value = match[1];
+            bpPopup.close();
+            bpConectado();
+            return;
+          }
+        } catch(e) {}
+
+        // Cross-origin — pede ao proxy para buscar via endpoint autenticado
+        fetch(PROXY + '/api/braspress/session')
+          .then(r => r.json())
+          .then(d => {
+            if (d.jsessionid) {
+              sess.braspress.jsessionid = d.jsessionid;
+              document.getElementById('bp-jsessionid').value = d.jsessionid;
+              if (bpPopup && !bpPopup.closed) bpPopup.close();
+              bpConectado();
+            } else {
+              // Fallback manual
+              document.getElementById('btn-bp-login').textContent = '✅ Logado! Clique para finalizar';
+              document.getElementById('btn-bp-login').disabled = false;
+              document.getElementById('btn-bp-login').onclick = () => {
+                const jsid = prompt('Cole o JSESSIONID: F12 > Application > Cookies > blue.braspress.com > JSESSIONID');
+                if (jsid) { sess.braspress.jsessionid = jsid.trim(); bpPopup && bpPopup.close(); bpConectado(); }
+              };
+            }
+          })
+          .catch(() => {
+            document.getElementById('btn-bp-login').textContent = '✅ Logado! Clique para finalizar';
+            document.getElementById('btn-bp-login').disabled = false;
+            document.getElementById('btn-bp-login').onclick = () => {
+              const jsid = prompt('Cole o JSESSIONID: F12 > Application > Cookies > blue.braspress.com > JSESSIONID');
+              if (jsid) { sess.braspress.jsessionid = jsid.trim(); bpPopup && bpPopup.close(); bpConectado(); }
+            };
+          });
+      }
+    } catch(e) {
+      // Erro de cross-origin ao ler location — ainda na braspress.com, aguarda
+    }
+  }, 800);
+}
+
+function capturarJsessionidManual() { }
+
+function bpConectado() {
+  document.getElementById('st-bp').className = 'cred-status ok';
+  document.getElementById('bp-status-msg').style.display = 'block';
+  document.getElementById('btn-bp-login').style.background = '#1a7f4b';
+  document.getElementById('btn-bp-login').textContent = '✅ BRASPRESS conectada';
+  document.getElementById('btn-bp-login').disabled = true;
+  document.getElementById('btn-bp-login').onclick = null;
+  clearInterval(bpPollTimer);
+}
+
+// Escuta postMessage do popup (caso consiga enviar)
+window.addEventListener('message', (event) => {
+  if (event.origin !== 'https://blue.braspress.com') return;
+  if (event.data && event.data.jsessionid) {
+    sess.braspress.jsessionid = event.data.jsessionid;
+    document.getElementById('bp-jsessionid').value = event.data.jsessionid;
+    if (bpPopup && !bpPopup.closed) bpPopup.close();
+    bpConectado();
+  }
+});
+
+</script>
+</body>
+</html>
