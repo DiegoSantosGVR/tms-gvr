@@ -479,11 +479,25 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'OPTIONS') { setCORS(res); res.writeHead(204); res.end(); return; }
 
-  // Serve o index.html na raiz
+  // Serve o index.html na raiz — corrige URL do proxy dinamicamente
   if (req.method === 'GET' && (pathname === '/' || pathname === '/index.html')) {
     const filePath = path.join(__dirname, 'index.html');
     if (fs.existsSync(filePath)) {
-      const html = fs.readFileSync(filePath, 'utf-8');
+      let html = fs.readFileSync(filePath, 'utf-8');
+      // Garante que o PROXY sempre aponta para a origem correta
+      html = html.replace(
+        /const PROXY = .*/,
+        "const PROXY = window.location.origin;"
+      );
+      // Remove avisos de localhost que confundem o usuário
+      html = html.replace(
+        /<span[^>]*>Proxy local:.*?<\/span>/g,
+        '<span style="font-size:12px;color:#1a7f4b">✅ tms-gvr.onrender.com</span>'
+      );
+      html = html.replace(
+        /<div class="alert alert-info"[^>]*>\s*💡[^<]*<strong>node server\.js<\/strong>[^<]*<\/div>/g,
+        ''
+      );
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(html);
     } else {
