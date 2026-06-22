@@ -9,6 +9,8 @@
 const http  = require('http');
 const https = require('https');
 const url   = require('url');
+const fs    = require('fs');
+const path  = require('path');
 
 const PORT = 3000;
 
@@ -477,8 +479,21 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'OPTIONS') { setCORS(res); res.writeHead(204); res.end(); return; }
 
+  // Serve o index.html na raiz
+  if (req.method === 'GET' && (pathname === '/' || pathname === '/index.html')) {
+    const filePath = path.join(__dirname, 'index.html');
+    if (fs.existsSync(filePath)) {
+      const html = fs.readFileSync(filePath, 'utf-8');
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(html);
+    } else {
+      res.writeHead(404); res.end('index.html not found');
+    }
+    return;
+  }
+
   if (req.method === 'GET' && pathname === '/health') {
-    return json(res, 200, { status: 'ok', versao: '1.1.0', transportadoras: ['JAMEF ✅', 'BRASPRESS ✅'] });
+    return json(res, 200, { status: 'ok', versao: '1.2.0', transportadoras: ['JAMEF ✅', 'BRASPRESS ✅'] });
   }
 
   if (req.method !== 'POST') return json(res, 405, { erro: 'Método não permitido' });
