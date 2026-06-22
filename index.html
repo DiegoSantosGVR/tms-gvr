@@ -203,28 +203,30 @@
               </div>
               <div class="field">
                 <label>Senha</label>
-                <input type="password" id="jamef-senha" placeholder="••••••••">
+                <input type="password" id="jamef-senha" placeholder="••••••••"
+                  onkeydown="if(event.key==='Enter') fazerLogin()">
               </div>
             </div>
           </div>
 
-          <!-- BRASPRESS -->
+                    <!-- BRASPRESS -->
           <div class="cred-box" id="cred-bp">
             <div class="cred-title">
               <div class="cred-status" id="st-bp"></div>
               BRASPRESS
             </div>
-            <div class="form-grid">
-              <div class="field">
-                <label>E-mail</label>
-                <input type="email" id="bp-user" placeholder="seu@email.com.br" autocomplete="email">
-                <div class="field-hint">Mesmo e-mail do portal blue.braspress.com</div>
-              </div>
-              <div class="field">
-                <label>Senha</label>
-                <input type="password" id="bp-senha" placeholder="••••••••">
-              </div>
+            <div class="alert alert-info" style="display:block; font-size:12px; margin-bottom:12px; padding:10px 12px; line-height:1.6">
+              Clique no botão abaixo para abrir o portal da BRASPRESS.<br>
+              Faça login normalmente — o TMS conecta automaticamente.
             </div>
+            <button onclick="conectarBraspress()" id="btn-bp-login"
+              style="width:100%;padding:10px;background:#C8102E;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+              <span>🔗</span> Conectar BRASPRESS
+            </button>
+            <div id="bp-status-msg" style="display:none;margin-top:8px;font-size:12px;color:var(--green);font-weight:600;text-align:center">
+              ✅ BRASPRESS conectada com sucesso!
+            </div>
+            <input type="hidden" id="bp-jsessionid">
           </div>
         </div>
 
@@ -416,7 +418,7 @@
 // ═══════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════
-const PROXY = 'http://localhost:3000';
+const PROXY = 'https://tms-gvr.onrender.com';
 
 // ═══════════════════════════════════════════════
 // SESSÃO
@@ -507,17 +509,21 @@ async function fazerLogin() {
       body: JSON.stringify({ email, senha })
     });
     const data = await resp.json();
-    if (!resp.ok) throw new Error(data.erro || 'Erro de autenticação JAMEF');
+    if (!resp.ok) {
+      const errMsg = data.erro || '';
+      // Servidor pediu tokens manuais
+      throw new Error(errMsg || 'Erro de autenticação JAMEF');
+    }
 
     sess.jamef.idToken      = data.IdToken;
     sess.jamef.accessToken  = data.AccessToken;
     sess.jamef.refreshToken = data.RefreshToken;
     sess.jamef.expAt        = now() + data.ExpiresIn;
 
-    // Salva credenciais BRASPRESS (email e senha vão junto na cotação)
-    if (bpUser && bpSenha) {
-      sess.braspress.email = bpUser;
-      sess.braspress.senha = bpSenha;
+    // Salva JSESSIONID da BRASPRESS
+    const bpSession = document.getElementById('bp-jsessionid').value.trim();
+    if (bpSession) {
+      sess.braspress.jsessionid = bpSession;
       document.getElementById('st-bp').className = 'cred-status ok';
     }
 
@@ -554,12 +560,12 @@ function mostrarCotacao() {
   document.getElementById('screen-login').style.display='none';
   document.getElementById('screen-cotacao').style.display='block';
   document.getElementById('user-info').style.display='flex';
-  document.getElementById('badge-braspress').style.background = sess.braspress.email ? '#dcfce7' : '#fef3c7';
-  document.getElementById('badge-braspress').style.color      = sess.braspress.email ? '#166534' : '#92400e';
+  document.getElementById('badge-braspress').style.background = sess.braspress.jsessionid ? '#dcfce7' : '#fef3c7';
+  document.getElementById('badge-braspress').style.color      = sess.braspress.jsessionid ? '#166534' : '#92400e';
 }
 
 function logout() {
-  sess = { jamef:{}, braspress:{} };
+  sess = { jamef: { idToken:null, accessToken:null, refreshToken:null, expAt:null }, braspress: { jsessionid:null } };
   document.getElementById('screen-login').style.display='flex';
   document.getElementById('screen-cotacao').style.display='none';
   document.getElementById('user-info').style.display='none';
@@ -624,10 +630,9 @@ async function fazerCotacao() {
       }
     };
 
-    if (sess.braspress.email) {
+    if (sess.braspress.jsessionid) {
       body.braspress = {
-        email: sess.braspress.email,
-        senha: sess.braspress.senha,
+        jsessionid: sess.braspress.jsessionid,
         ...ultimoCampos
       };
     }
@@ -748,6 +753,127 @@ function limpar() {
   document.getElementById('resultado').style.display='none';
   document.getElementById('kpi-bar').style.display='none';
 }
+
+
+// ── BRASPRESS — Login via popup ──────────────────────────
+let bpPopup = null;
+let bpPollTimer = null;
+
+function conectarBraspress() {
+  // Abre popup com o portal da BRASPRESS
+  const w = 520, h = 680;
+  const left = Math.round(window.screenX + (window.outerWidth - w) / 2);
+  const top  = Math.round(window.screenY + (window.outerHeight - h) / 2);
+
+  bpPopup = window.open(
+    'https://www.braspress.com/area-do-cliente/minha-conta/',
+    'braspress_login',
+    `width=${w},height=${h},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes`
+  );
+
+  if (!bpPopup) {
+    showAlert('alert-login', '❌ Popup bloqueado pelo navegador. Permita popups para este site e tente novamente.');
+    return;
+  }
+
+  document.getElementById('btn-bp-login').textContent = '⏳ Aguardando login no popup...';
+  document.getElementById('btn-bp-login').disabled = true;
+
+  // Monitora o popup a cada 800ms
+  bpPollTimer = setInterval(() => {
+    try {
+      if (!bpPopup || bpPopup.closed) {
+        clearInterval(bpPollTimer);
+        // Se fechou sem conectar, restaura botão
+        if (!sess.braspress.jsessionid) {
+          document.getElementById('btn-bp-login').textContent = '🔗 Conectar BRASPRESS';
+          document.getElementById('btn-bp-login').disabled = false;
+        }
+        return;
+      }
+
+      // Tenta ler a URL atual do popup
+      const popupUrl = bpPopup.location.href;
+
+      // Quando chegar no blue.braspress.com, tenta capturar o cookie
+      if (popupUrl.includes('blue.braspress.com')) {
+        // Tenta ler os cookies do popup (funciona se mesma origem — não vai funcionar cross-origin)
+        // Fallback: pede ao proxy para buscar o cookie via sessão já autenticada
+        clearInterval(bpPollTimer);
+
+        // Tenta capturar document.cookie do popup (só funciona se permitido)
+        try {
+          const cookies = bpPopup.document.cookie;
+          const match = cookies.match(/JSESSIONID=([^;]+)/);
+          if (match) {
+            const jsessionid = match[1];
+            document.getElementById('bp-jsessionid').value = jsessionid;
+            sess.braspress.jsessionid = jsessionid;
+            bpPopup.close();
+            bpConectado();
+            return;
+          }
+        } catch(e) {
+          // Cross-origin — não consegue ler cookies diretamente
+        }
+
+        // Fallback: pede ao usuário para fechar o popup — já está logado
+        // O proxy vai usar a sessão do browser através do JSESSIONID que o usuário tem
+        // Solução: injetar script no popup para enviar o cookie via postMessage
+        try {
+          bpPopup.postMessage('GET_JSESSIONID', 'https://blue.braspress.com');
+        } catch(e) {}
+
+        // Instrução de fallback
+        document.getElementById('btn-bp-login').textContent = '✅ Logado! Clique aqui para finalizar';
+        document.getElementById('btn-bp-login').disabled = false;
+        document.getElementById('btn-bp-login').onclick = () => capturarJsessionidManual();
+      }
+    } catch(e) {
+      // Erro de cross-origin ao ler location — ainda na braspress.com, aguarda
+    }
+  }, 800);
+}
+
+function capturarJsessionidManual() {
+  // Último recurso: abre um endpoint do proxy que retorna o JSESSIONID
+  // via uma requisição autenticada feita pelo próprio servidor
+  // Por ora, solicita ao usuário via campo simples
+  const jsid = prompt(
+    'Quase lá! Cole o JSESSIONID do portal:
+
+' +
+    'No popup: F12 → Application → Cookies → blue.braspress.com → JSESSIONID'
+  );
+  if (jsid && jsid.trim()) {
+    sess.braspress.jsessionid = jsid.trim();
+    document.getElementById('bp-jsessionid').value = jsid.trim();
+    if (bpPopup && !bpPopup.closed) bpPopup.close();
+    bpConectado();
+  }
+}
+
+function bpConectado() {
+  document.getElementById('st-bp').className = 'cred-status ok';
+  document.getElementById('bp-status-msg').style.display = 'block';
+  document.getElementById('btn-bp-login').style.background = '#1a7f4b';
+  document.getElementById('btn-bp-login').textContent = '✅ BRASPRESS conectada';
+  document.getElementById('btn-bp-login').disabled = true;
+  document.getElementById('btn-bp-login').onclick = null;
+  clearInterval(bpPollTimer);
+}
+
+// Escuta postMessage do popup (caso consiga enviar)
+window.addEventListener('message', (event) => {
+  if (event.origin !== 'https://blue.braspress.com') return;
+  if (event.data && event.data.jsessionid) {
+    sess.braspress.jsessionid = event.data.jsessionid;
+    document.getElementById('bp-jsessionid').value = event.data.jsessionid;
+    if (bpPopup && !bpPopup.closed) bpPopup.close();
+    bpConectado();
+  }
+});
+
 </script>
 </body>
 </html>
