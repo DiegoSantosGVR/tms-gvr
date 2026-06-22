@@ -105,75 +105,57 @@ function horaAgora() {
 
 // ① Login JAMEF via AWS Cognito
 async function jamefLogin(body) {
-  // JAMEF usa Cognito com USER_SRP_AUTH (SRP desabilitado para chamada direta)
-  // Alternativa: simular o login via portal web da JAMEF para obter os cookies
-  // O portal envia as credenciais para o Amplify SDK no browser — replicamos via API interna
-
-  // Tenta primeiro via portal JAMEF (endpoint interno de autenticação)
-  const formBody = `username=${encodeURIComponent(body.email)}&password=${encodeURIComponent(body.senha)}`;
+  // Endpoint real confirmado via DevTools: POST /api/auth/login
+  const payload = JSON.stringify({
+    email:    body.email,
+    password: body.senha
+  });
 
   const result = await httpsRequest({
     hostname: 'cliente.jamef.com.br',
     path:     '/api/auth/login',
     method:   'POST',
     headers: {
-      'Content-Type':   'application/x-www-form-urlencoded',
+      'Content-Type':   'application/json',
       'Accept':         'application/json',
       'Origin':         'https://cliente.jamef.com.br',
       'Referer':        'https://cliente.jamef.com.br/login',
       'User-Agent':     'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-      'Content-Length': Buffer.byteLength(formBody)
-    }
-  }, formBody);
-
-  // Se o portal retornar tokens direto
-  if (result.status === 200) {
-    try {
-      const data = JSON.parse(result.body);
-      if (data.IdToken || data.idToken || data.AuthenticationResult) {
-        const auth = data.AuthenticationResult || data;
-        return {
-          IdToken:      auth.IdToken     || auth.idToken,
-          AccessToken:  auth.AccessToken || auth.accessToken,
-          RefreshToken: auth.RefreshToken|| auth.refreshToken,
-          ExpiresIn:    auth.ExpiresIn   || 7200
-        };
-      }
-    } catch {}
-  }
-
-  // Fallback: Cognito com CUSTOM_AUTH
-  const payload = JSON.stringify({
-    AuthFlow: 'CUSTOM_AUTH',
-    ClientId: '75lv5or3fujfp3trhse7bh508m',
-    AuthParameters: {
-      USERNAME: body.email,
-      CHALLENGE_NAME: 'SRP_A'
-    }
-  });
-
-  const result2 = await httpsRequest({
-    hostname: 'cognito-idp.us-east-1.amazonaws.com',
-    path: '/', method: 'POST',
-    headers: {
-      'Content-Type':   'application/x-amz-json-1.1',
-      'X-Amz-Target':  'AWSCognitoIdentityProviderService.InitiateAuth',
       'Content-Length': Buffer.byteLength(payload)
     }
   }, payload);
 
-  const data2 = JSON.parse(result2.body);
+  let data;
+  try { data = JSON.parse(result.body); }
+  catch { throw new Error('JAMEF retornou resposta inválida no login'); }
 
-  // Se nenhum fluxo funcionar, instrui usar os tokens diretamente
-  if (result2.status !== 200) {
+  if (result.status !== 200) {
     throw new Error(
-      'LOGIN_TOKEN_REQUIRED:O Cognito da JAMEF requer autenticação via browser. ' +
-      'Por favor, faça login no portal cliente.jamef.com.br, abra o DevTools, ' +
-      'vá em Application > Cookies e copie os valores de idToken e accessToken.'
+      data.message || data.erro || data.error ||
+      'E-mail ou senha JAMEF incorretos.'
     );
   }
 
-  return data2.AuthenticationResult;
+  // Normaliza os tokens para o formato padrão
+  // Verifica os campos possíveis que o portal pode retornar
+  const idToken      = data.idToken      || data.IdToken      || data.token      || data.accessToken;
+  const accessToken  = data.accessToken  || data.AccessToken  || data.token;
+  const refreshToken = data.refreshToken || data.RefreshToken || null;
+  const expiresIn    = data.expiresIn    || data.ExpiresIn    || 7200;
+
+  if (!idToken) {
+    // Log da resposta para debug
+    console.log('[JAMEF LOGIN] Resposta inesperada:', JSON.stringify(data).slice(0, 300));
+    throw new Error('JAMEF login OK mas tokens não encontrados na resposta. Verifique os logs do servidor.');
+  }
+
+  return {
+    IdToken:      idToken,
+    AccessToken:  accessToken  || idToken,
+    RefreshToken: refreshToken,
+    ExpiresIn:    expiresIn,
+    _rawLogin:    data  // preserva resposta completa para debug
+  };
 }
 
 // ② Renovar token JAMEF
@@ -366,14 +348,12 @@ async function braspressGetCliente(cnpjStr, jsessionid) {
 
 // ④ Cotação BRASPRESS — fluxo completo
 async function braspressCotacao(campos) {
-  const { email, senha } = campos;
-  if (!email || !senha) throw new Error('Credenciais BRASPRESS não informadas');
+  // Aceita jsessionid direto (copiado do portal) ou via sessão em memória
+  let jsessionid = campos.jsessionid || bpSession.jsessionid;
+  if (!jsessionid) throw new Error('JSESSIONID da BRASPRESS não informado. Copie do portal blue.braspress.com → F12 → Application → Cookies.');
 
-  // Garante sessão ativa
-  let jsessionid = bpSession.jsessionid;
-  if (!jsessionid || bpSession.email !== email) {
-    jsessionid = await braspressLogin(email, senha);
-  }
+  // Atualiza sessão em memória
+  if (campos.jsessionid) bpSession.jsessionid = campos.jsessionid;
 
   const pesoReal   = Number(campos.pesoReal);
   const pesoCubado = Number(campos.pesoCubado ?? pesoReal);
