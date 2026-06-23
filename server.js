@@ -21,8 +21,8 @@ const JAMEF_API = {
   host:     'api-qa.jamef.com.br',
   basePath: '/calculo-frete/v1',
   authPath: '/auth/v1/logins',      // POST /logins — status 201 confirma endpoint REST
-  username: 'sistemas@jamef.com.br',
-  password: '12343456',
+  username: 'diego.santos@trousseau.com.br',
+  password: 'Trousseau123@',
   _token:   null,
   _tokenExp: 0
 };
