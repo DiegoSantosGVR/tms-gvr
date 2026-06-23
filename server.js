@@ -20,7 +20,7 @@ const PORT = process.env.PORT || 3000;
 const JAMEF_API = {
   host:     'api-qa.jamef.com.br',
   basePath: '/calculo-frete/v1',
-  authPath: '/auth/v1/logins',      // POST /logins — status 201 confirma endpoint REST
+  authPath: '/auth/v1/login',      // POST /logins — status 201 confirma endpoint REST
   username: 'diego.santos@trousseau.com.br',
   password: 'Trousseau123@',
   _token:   null,
