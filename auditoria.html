@@ -401,18 +401,23 @@ function parseCTe(xmlStr, filename) {
   const cnpjDest    = doc.querySelector('dest CNPJ')?.textContent?.replace(/\D/g,'') || '';
   const nomeDestBruto = doc.querySelector('dest xNome')?.textContent?.trim() || '';
 
-  // Extrai série da primeira NF-e vinculada (posições 22-24 da chave de 44 dígitos)
-  const primeiraChaveNF = doc.getElementsByTagName('chNFe')[0]?.textContent || '';
-  const serieNF = primeiraChaveNF.length === 44 ? String(parseInt(primeiraChaveNF.slice(22,25))) : '';
+  // Chaves das NF-es — estão em <infDoc><infNFe><chave>XXXX</chave></infNFe></infDoc>
+  const chavesNF = Array.from(doc.querySelectorAll('infNFe chave'))
+    .map(e => e.textContent.trim())
+    .filter(c => c.length === 44);
+
+  // Série: posições 22-24 da primeira chave de NF (base 0)
+  const primeiraChaveNF = chavesNF[0] || '';
+  const serieNF = primeiraChaveNF ? String(parseInt(primeiraChaveNF.slice(22,25))) : '';
+
+  // Números das NF-es: posições 25-34 de cada chave
+  const nfes = chavesNF
+    .map(c => String(parseInt(c.slice(25,34))).padStart(9,'0'))
+    .join(', ');
 
   // Resolve nomes GVR
   const nomeRem  = resolverNome(cnpjRemRaw,  nomeRemBruto,  serieNF, true);
   const nomeDest = resolverNome(cnpjDest,    nomeDestBruto, serieNF, false);
-
-  // NF-es
-  const nfes = Array.from(doc.getElementsByTagName('chNFe'))
-    .map(e => String(parseInt(e.textContent.slice(25,34))).padStart(9,'0'))
-    .join(', ');
 
   // Valores
   const vTPrest = parseFloat(get('vTPrest') || '0');
