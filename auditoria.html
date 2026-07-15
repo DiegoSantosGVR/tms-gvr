@@ -6,7 +6,7 @@
 <title>TMS GVR — Auditoria de CT-e</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
 :root {
   --red:#C8102E; --red-bg:#fff0f2;
   --blue:#1B3F6E; --blue-light:#eef3fa;
@@ -25,38 +25,40 @@ header { background:var(--blue); padding:0 32px; height:56px; display:flex; alig
 .logo-sub { font-size:12px; color:rgba(255,255,255,.6); }
 .nav-link { color:rgba(255,255,255,.75); font-size:13px; text-decoration:none; padding:6px 14px; border-radius:6px; border:1px solid rgba(255,255,255,.2); }
 .nav-link:hover { background:rgba(255,255,255,.1); color:#fff; }
-main { flex:1; padding:28px 20px; max-width:1200px; margin:0 auto; width:100%; }
+main { flex:1; padding:28px 20px; max-width:1400px; margin:0 auto; width:100%; }
 .card { background:#fff; border-radius:var(--radius); box-shadow:var(--shadow-md); border:1px solid var(--gray-100); overflow:hidden; margin-bottom:20px; }
 .card-header { padding:16px 22px; font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:space-between; gap:10px; border-bottom:1px solid var(--gray-100); }
 .card-header.blue { background:var(--blue); color:#fff; }
 .card-header.gray { background:var(--gray-50); color:var(--gray-800); }
 .card-body { padding:22px; }
-.btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:10px 20px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; border:none; font-family:var(--font); transition:all .18s; }
+.btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; padding:9px 18px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; border:none; font-family:var(--font); transition:all .18s; }
 .btn-primary { background:var(--blue); color:#fff; }
 .btn-primary:hover { background:#142f54; }
 .btn-outline { background:#fff; color:var(--blue); border:1.5px solid var(--blue); }
 .btn-outline:hover { background:var(--blue-light); }
-.btn-amber { background:var(--amber); color:#fff; }
-.btn-sm { padding:6px 12px; font-size:12px; }
+.btn-amber  { background:var(--amber); color:#fff; }
+.btn-green  { background:var(--green); color:#fff; }
+.btn-red    { background:var(--red); color:#fff; }
+.btn-sm { padding:5px 11px; font-size:12px; }
 
 /* TABS */
-.tabs { display:flex; border-bottom:2px solid var(--gray-100); margin-bottom:0; }
+.tabs { display:flex; border-bottom:2px solid var(--gray-100); }
 .tab-btn { padding:12px 22px; font-size:13px; font-weight:600; color:var(--gray-400); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; transition:all .15s; background:none; border-top:none; border-left:none; border-right:none; font-family:var(--font); }
 .tab-btn.active { color:var(--blue); border-bottom-color:var(--blue); }
 .tab-pane { display:none; }
 .tab-pane.active { display:block; }
 
 /* DROP */
-.drop-zone { border:2px dashed var(--gray-200); border-radius:var(--radius); padding:40px 24px; text-align:center; cursor:pointer; transition:all .2s; background:var(--gray-50); }
+.drop-zone { border:2px dashed var(--gray-200); border-radius:var(--radius); padding:38px 24px; text-align:center; cursor:pointer; transition:all .2s; background:var(--gray-50); }
 .drop-zone:hover,.drop-zone.drag-over { border-color:var(--blue); background:var(--blue-light); }
 .drop-zone .icon { font-size:36px; margin-bottom:10px; }
 .drop-zone h3 { font-size:14px; font-weight:700; margin-bottom:4px; }
 .drop-zone p { font-size:12px; color:var(--gray-400); }
 
-/* RESUMO BAR */
+/* KPI BAR */
 .kpi-bar { display:flex; gap:20px; flex-wrap:wrap; padding:16px 22px; background:var(--blue); color:#fff; }
-.kpi-item .kv { font-size:22px; font-weight:800; }
-.kpi-item .kl { font-size:11px; color:rgba(255,255,255,.6); text-transform:uppercase; letter-spacing:.4px; margin-top:2px; }
+.kpi-item .kv { font-size:20px; font-weight:800; }
+.kpi-item .kl { font-size:10px; color:rgba(255,255,255,.6); text-transform:uppercase; letter-spacing:.4px; margin-top:2px; }
 .kv.ok { color:#6ee7b7; } .kv.warn { color:#fcd34d; } .kv.crit { color:#fca5a5; }
 .ksep { width:1px; background:rgba(255,255,255,.15); align-self:stretch; }
 
@@ -65,37 +67,42 @@ main { flex:1; padding:28px 20px; max-width:1200px; margin:0 auto; width:100%; }
 .session-box input { flex:1; min-width:200px; border:1.5px solid var(--gray-200); border-radius:7px; padding:8px 11px; font-size:12px; font-family:monospace; }
 .session-box.active { border-color:var(--green); background:var(--green-bg); }
 
-/* TABELAS */
-.tbl { width:100%; border-collapse:collapse; font-size:13px; }
-.tbl th { background:var(--gray-50); padding:9px 12px; text-align:left; font-size:11px; font-weight:700; color:var(--gray-400); text-transform:uppercase; letter-spacing:.4px; border-bottom:2px solid var(--gray-100); white-space:nowrap; }
-.tbl td { padding:10px 12px; border-bottom:1px solid var(--gray-100); vertical-align:middle; }
+/* TABELA PRINCIPAL */
+.tbl { width:100%; border-collapse:collapse; font-size:12px; }
+.tbl th { background:var(--gray-50); padding:8px 10px; text-align:left; font-size:10px; font-weight:700; color:var(--gray-400); text-transform:uppercase; letter-spacing:.4px; border-bottom:2px solid var(--gray-100); white-space:nowrap; }
+.tbl td { padding:9px 10px; border-bottom:1px solid var(--gray-100); vertical-align:middle; }
 .tbl tr:last-child td { border-bottom:none; }
 .tbl tr:hover td { background:var(--gray-50); }
-.mono { font-family:monospace; font-size:12px; }
+.mono { font-family:monospace; font-size:11px; }
 
 /* BADGES */
-.tp-badge { display:inline-flex; align-items:center; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; }
-.tp-jamef { background:#E8F0FA; color:var(--blue); }
+.tp-badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:700; white-space:nowrap; }
+.tp-jamef     { background:#E8F0FA; color:var(--blue); }
 .tp-braspress { background:#FFF0F2; color:var(--red); }
-.tp-outro { background:var(--gray-100); color:var(--gray-600); }
-.st-badge { display:inline-flex; align-items:center; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; white-space:nowrap; }
-.st-ok { background:var(--green-bg); color:var(--green); }
+.tp-outro     { background:var(--gray-100); color:var(--gray-600); }
+.st-badge { display:inline-flex; align-items:center; padding:3px 8px; border-radius:20px; font-size:10px; font-weight:700; white-space:nowrap; }
+.st-ok   { background:var(--green-bg); color:var(--green); }
 .st-warn { background:var(--amber-bg); color:var(--amber); }
 .st-crit { background:var(--red-bg); color:var(--red); }
 .st-pend { background:var(--gray-100); color:var(--gray-400); }
-
 .div-pos { color:var(--red); font-weight:700; }
 .div-neg { color:var(--green); font-weight:700; }
 
-/* ALERTA NÃO CONSOLIDADO */
-.alert-banner { background:var(--amber-bg); border:2px solid var(--amber); border-radius:var(--radius); padding:16px 20px; margin-bottom:20px; display:none; }
-.alert-banner h3 { color:var(--amber); font-size:14px; font-weight:700; margin-bottom:4px; }
-.alert-banner p { font-size:13px; color:var(--gray-600); }
-.grupo-card { border:1px solid var(--amber); border-radius:8px; margin-bottom:12px; overflow:hidden; }
-.grupo-header { background:var(--amber-bg); padding:12px 16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
-.grupo-title { font-size:13px; font-weight:700; color:var(--amber); }
-.grupo-meta { font-size:12px; color:var(--gray-600); }
-.grupo-total { font-size:13px; font-weight:700; color:var(--red); }
+/* BANNER NÃO CONSOLIDADO */
+.nc-banner { display:none; background:var(--amber-bg); border:2px solid var(--amber); border-radius:var(--radius); padding:14px 20px; margin-bottom:16px; }
+.nc-banner-inner { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+.nc-banner-txt { font-size:14px; font-weight:700; color:var(--amber); }
+.nc-banner-btns { display:flex; gap:8px; flex-wrap:wrap; }
+
+/* GRUPOS NÃO CONSOLIDADO */
+.grupo-card { border:1.5px solid var(--amber); border-radius:10px; margin-bottom:14px; overflow:hidden; }
+.grupo-hdr { background:var(--amber-bg); padding:12px 16px; border-bottom:1px solid #fde68a; }
+.grupo-hdr-main { font-size:13px; font-weight:700; color:var(--gray-800); line-height:1.5; }
+.grupo-hdr-main strong { color:var(--blue); }
+.grupo-hdr-main .transp { color:var(--gray-600); font-weight:400; }
+.grupo-hdr-stats { display:flex; gap:20px; margin-top:6px; flex-wrap:wrap; }
+.grupo-stat { font-size:12px; color:var(--gray-600); }
+.grupo-stat strong { color:var(--red); }
 
 /* PROGRESS */
 .prog-wrap { margin-top:12px; display:none; }
@@ -103,10 +110,10 @@ main { flex:1; padding:28px 20px; max-width:1200px; margin:0 auto; width:100%; }
 .prog-fill { height:100%; background:var(--blue); border-radius:3px; transition:width .3s; }
 .prog-label { font-size:11px; color:var(--gray-400); margin-top:4px; }
 
-/* ALERT */
+/* INFO BOX */
 .info-box { background:var(--blue-light); border:1px solid #bfdbfe; border-radius:8px; padding:10px 14px; font-size:12px; color:var(--blue); margin-top:12px; line-height:1.5; }
 
-/* LOADING */
+/* OVERLAY */
 #overlay { display:none; position:fixed; inset:0; background:rgba(255,255,255,.85); backdrop-filter:blur(2px); z-index:100; align-items:center; justify-content:center; flex-direction:column; gap:14px; }
 .spin { width:40px; height:40px; border:4px solid var(--gray-100); border-top-color:var(--blue); border-radius:50%; animation:spin .8s linear infinite; }
 @keyframes spin { to { transform:rotate(360deg); } }
@@ -123,12 +130,25 @@ main { flex:1; padding:28px 20px; max-width:1200px; margin:0 auto; width:100%; }
 .drow:last-child { border:none; }
 .dl { color:var(--gray-600); flex-shrink:0; }
 .dv { font-weight:600; text-align:right; }
-.sec-label-m { margin:12px 0 4px; font-size:11px; font-weight:700; color:var(--gray-400); text-transform:uppercase; letter-spacing:.5px; }
+.sec-lbl { margin:12px 0 4px; font-size:11px; font-weight:700; color:var(--gray-400); text-transform:uppercase; letter-spacing:.5px; }
 .comp-tbl { width:100%; border-collapse:collapse; font-size:12px; }
 .comp-tbl th { background:var(--gray-50); padding:6px 10px; text-align:left; font-size:11px; color:var(--gray-400); font-weight:700; }
 .comp-tbl td { padding:6px 10px; border-bottom:1px solid var(--gray-100); }
 
-@media(max-width:768px) { main { padding:14px; } .tbl { font-size:12px; } }
+/* PDF PRINT */
+@media print {
+  header, .session-box, .drop-zone, .prog-wrap, .info-box, .tabs,
+  .tab-btn, #tab-auditoria, .nc-banner-btns, .btn-sm, #overlay { display:none !important; }
+  body { background:#fff; }
+  .nc-banner { display:block !important; border:none; background:#fff; }
+  .nc-banner-txt { color:#000; }
+  .grupo-card { border:1px solid #ccc; break-inside:avoid; }
+  .grupo-hdr { background:#f5f5f5; }
+  main { padding:0; max-width:100%; }
+  .card { box-shadow:none; border:none; }
+}
+
+@media(max-width:900px) { main { padding:14px; } .tbl { font-size:11px; } }
 </style>
 </head>
 <body>
@@ -163,11 +183,9 @@ main { flex:1; padding:28px 20px; max-width:1200px; margin:0 auto; width:100%; }
   <div class="card">
     <div class="card-header blue">📂 Importar CT-es para auditoria</div>
     <div class="card-body">
-
-      <!-- SESSÃO BRASPRESS -->
       <div class="session-box" id="session-box">
         <span style="font-size:12px;font-weight:700;color:var(--gray-600);white-space:nowrap">BRASPRESS · JSESSIONID</span>
-        <input type="text" id="bp-jsessionid" placeholder="Cole o JSESSIONID para recotação automática da BRASPRESS (F12 → Application → Cookies → blue.braspress.com)">
+        <input type="text" id="bp-jsessionid" placeholder="Cole o JSESSIONID para recotação automática da BRASPRESS">
         <button class="btn btn-outline btn-sm" onclick="ativarSessao()">Ativar</button>
         <span id="bp-status" style="font-size:12px;font-weight:600;color:var(--gray-400);white-space:nowrap">⬤ Sem sessão</span>
       </div>
@@ -187,7 +205,7 @@ main { flex:1; padding:28px 20px; max-width:1200px; margin:0 auto; width:100%; }
       </div>
 
       <div class="info-box">
-        💡 O sistema lê o XML, recota via API e compara com o valor cobrado. <strong>Tolerância: 10%</strong> — OK ≤10% · Alerta 10–20% · Crítico >20%. Também detecta fretes que deveriam ter sido consolidados.
+        💡 O sistema lê o XML, recota via API e compara com o valor cobrado. <strong>Tolerância: 10%</strong> — OK ≤10% · Alerta 10–20% · Crítico >20%.
       </div>
     </div>
   </div>
@@ -195,24 +213,35 @@ main { flex:1; padding:28px 20px; max-width:1200px; margin:0 auto; width:100%; }
   <!-- RESULTADOS -->
   <div id="sec-resultado" style="display:none">
 
+    <!-- BANNER NÃO CONSOLIDADO -->
+    <div class="nc-banner" id="nc-banner">
+      <div class="nc-banner-inner">
+        <div class="nc-banner-txt" id="nc-banner-txt"></div>
+        <div class="nc-banner-btns">
+          <button class="btn btn-amber btn-sm" onclick="switchTab('consolidado', document.querySelectorAll('.tab-btn')[1])">● Ver detalhes</button>
+          <button class="btn btn-green btn-sm" onclick="exportarConsolidadoXLSX()">⬇ Exportar Contestação Excel</button>
+          <button class="btn btn-red btn-sm" onclick="exportarConsolidadoPDF()">⬇ Exportar PDF</button>
+        </div>
+      </div>
+    </div>
+
     <!-- KPI BAR -->
     <div class="card">
       <div class="kpi-bar">
         <div class="kpi-item"><div class="kv" id="k-total">0</div><div class="kl">CT-es</div></div>
         <div class="ksep"></div>
-        <div class="kpi-item"><div class="kv ok" id="k-ok">0</div><div class="kl">✅ OK ≤10%</div></div>
+        <div class="kpi-item"><div class="kv ok"   id="k-ok">0</div><div class="kl">✅ OK ≤10%</div></div>
         <div class="kpi-item"><div class="kv warn" id="k-warn">0</div><div class="kl">⚠️ Alerta 10–20%</div></div>
         <div class="kpi-item"><div class="kv crit" id="k-crit">0</div><div class="kl">🔴 Crítico >20%</div></div>
-        <div class="kpi-item"><div class="kv" id="k-pend">0</div><div class="kl">⏳ Pendente</div></div>
+        <div class="kpi-item"><div class="kv"      id="k-pend">0</div><div class="kl">⏳ Pendente</div></div>
         <div class="ksep"></div>
-        <div class="kpi-item"><div class="kv" id="k-cobrado">—</div><div class="kl">Total cobrado</div></div>
-        <div class="kpi-item"><div class="kv" id="k-cotado">—</div><div class="kl">Total recotado</div></div>
-        <div class="kpi-item"><div class="kv" id="k-div">—</div><div class="kl">Divergência</div></div>
+        <div class="kpi-item"><div class="kv"      id="k-cobrado">—</div><div class="kl">Total cobrado</div></div>
+        <div class="kpi-item"><div class="kv"      id="k-cotado">—</div><div class="kl">Total recotado</div></div>
+        <div class="kpi-item"><div class="kv"      id="k-div">—</div><div class="kl">Divergência</div></div>
         <div class="ksep"></div>
         <div class="kpi-item"><div class="kv crit" id="k-nconsolid">0</div><div class="kl">⚠️ Não consolidados</div></div>
       </div>
 
-      <!-- ABAS -->
       <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('auditoria',this)">📊 Auditoria de cobranças</button>
         <button class="tab-btn" onclick="switchTab('consolidado',this)">⚠️ Frete não consolidado</button>
@@ -228,13 +257,20 @@ main { flex:1; padding:28px 20px; max-width:1200px; margin:0 auto; width:100%; }
           <table class="tbl">
             <thead>
               <tr>
-                <th>Transportadora</th>
-                <th>Nº CT-e</th>
-                <th>Data</th>
-                <th>Rota</th>
-                <th>Peso cob.</th>
-                <th>Valor NF</th>
-                <th>Cobrado</th>
+                <th>Emissor DACTe</th>
+                <th>Nº DACTe</th>
+                <th>Data Emissão</th>
+                <th>Vl. NF</th>
+                <th>Peso (kg)</th>
+                <th>Volumes</th>
+                <th>Remetente</th>
+                <th>Cidade Rem.</th>
+                <th>UF Rem.</th>
+                <th>Destinatário</th>
+                <th>Cidade Dest.</th>
+                <th>UF Dest.</th>
+                <th>NF-e(s)</th>
+                <th>Vl. Frete</th>
                 <th>Recotado</th>
                 <th>Divergência</th>
                 <th>Status</th>
@@ -248,10 +284,11 @@ main { flex:1; padding:28px 20px; max-width:1200px; margin:0 auto; width:100%; }
 
       <!-- ABA NÃO CONSOLIDADO -->
       <div class="tab-pane" id="tab-consolidado">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--gray-100)">
-          <span style="font-size:13px;color:var(--gray-600)">CT-es do mesmo remetente, mesmo destinatário, mesma data e mesma transportadora que deveriam ter sido consolidados.</span>
-          <div style="display:flex;gap:8px;flex-shrink:0">
-            <button class="btn btn-amber btn-sm" onclick="exportarConsolidadoXLSX()">⬇ Exportar Excel</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--gray-100);flex-wrap:wrap;gap:8px">
+          <span style="font-size:13px;color:var(--gray-600)">CT-es do mesmo remetente, destinatário, data e transportadora que deveriam ter sido consolidados.</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-green btn-sm" onclick="exportarConsolidadoXLSX()">⬇ Exportar Excel</button>
+            <button class="btn btn-red btn-sm" onclick="exportarConsolidadoPDF()">⬇ Exportar PDF</button>
           </div>
         </div>
         <div id="grupos-container" style="padding:16px">
@@ -261,7 +298,6 @@ main { flex:1; padding:28px 20px; max-width:1200px; margin:0 auto; width:100%; }
         </div>
       </div>
     </div>
-
   </div>
 </main>
 
@@ -270,6 +306,33 @@ const PROXY = window.location.origin;
 const TOLERANCIA = 0.10;
 let dados = [];
 let bpJsessionid = null;
+let alertasGlobais = [];
+
+// ── MAPA DE LOJAS GVR ──
+const LOJAS = {
+  '66934555003053':'BELVEDERE','66934555002910':'BH SHOPPING',
+  '66934555000542':'LOURDES','66934555001000':'PONTEIO',
+  '66934555001867':'LEBLON','66934555001786':'BARRA SHOPPING',
+  '66934555002677':'VILLAGE MALL','66934555001190':'IPANEMA',
+  '66934555003215':'ANGRA DOS REIS','66934555000976':'GAVEA',
+  '66934555002081':'PARK SHOPPING','66934555003487':'IGUATEMI BRASILIA',
+  '66934555000380':'GABRIEL MONTEIRO','66934555001271':'IGUATEMI',
+  '66934555003134':'FAZENDA BOA VISTA','66934555000895':'HIGIENOPOLIS',
+  '66934555002324':'CIDADE JARDIM','66934555000623':'VILA NOVA CONCEIÇÃO',
+  '66934555000119':'JOÃO CACHOEIRA','66934555002839':'OUTLET CATARINA',
+  '66934555002162':'OUTLET CAMPINAS','66934555001948':'RETAGUARDA',
+};
+const CNPJ_MULTI = '66934555001514';
+const SERIE_LOJA = {'7':'CORPORATIVO','9':'MULTIMARCAS','8':'HOTELARIA','12':'E-COMMERCE','10':'ATELIÊ','4':'ESTOQUE CENTRAL','04':'ESTOQUE CENTRAL'};
+
+function resolverNome(cnpj, nome, serie, isRemetente) {
+  const cnpjLimpo = cnpj.replace(/\D/g,'');
+  if (cnpjLimpo === CNPJ_MULTI) {
+    if (isRemetente && serie) return SERIE_LOJA[serie] || SERIE_LOJA[String(parseInt(serie))] || nome;
+    return 'ESTOQUE CENTRAL';
+  }
+  return LOJAS[cnpjLimpo] || nome || cnpjLimpo;
+}
 
 // ── TABS ──
 function switchTab(id, el) {
@@ -286,10 +349,8 @@ function ativarSessao() {
   bpJsessionid = val;
   const box = document.getElementById('session-box');
   box.classList.add('active');
-  document.getElementById('bp-status').textContent = '✅ Ativo';
-  document.getElementById('bp-status').style.color = 'var(--green)';
-
-  // Recota pendentes
+  document.getElementById('bp-status').textContent  = '✅ Ativo';
+  document.getElementById('bp-status').style.color  = 'var(--green)';
   const pendentes = dados.filter(d=>d.transportadora==='BRASPRESS' && d.status==='sem-sessao');
   if (pendentes.length > 0) {
     document.getElementById('overlay').style.display='flex';
@@ -312,43 +373,55 @@ function parseCTe(xmlStr, filename) {
   const get = tag => doc.getElementsByTagName(tag)[0]?.textContent?.trim() || '';
 
   // Transportadora
-  const cnpjEmit = doc.querySelector('emit CNPJ')?.textContent || '';
+  const cnpjEmit = doc.querySelector('emit CNPJ')?.textContent?.replace(/\D/g,'') || '';
   const nomeEmit = doc.querySelector('emit xNome')?.textContent?.toUpperCase() || '';
-  let transportadora = 'OUTRO';
+  let transportadora = nomeEmit || 'OUTRO';
   if (cnpjEmit.includes('20147617') || nomeEmit.includes('JAMEF'))     transportadora = 'JAMEF';
   if (cnpjEmit.includes('48740351') || nomeEmit.includes('BRASPRESS')) transportadora = 'BRASPRESS';
+  const nomeEmitFull = doc.querySelector('emit xNome')?.textContent?.trim() || transportadora;
 
+  // Identificação
   const nCT   = get('nCT');
   const chave = get('chCTe') || '';
   const dhEmi = get('dhEmi');
   const data  = dhEmi ? dhEmi.slice(0,10).split('-').reverse().join('/') : '—';
   const dataISO = dhEmi ? dhEmi.slice(0,10) : '';
 
-  // Rota
+  // CEPs e municípios
   const cepOrig = doc.querySelector('enderReme CEP')?.textContent?.replace(/\D/g,'') || '';
   const cepDest = doc.querySelector('enderDest CEP')?.textContent?.replace(/\D/g,'') || '';
-  const munIni  = get('xMunIni') || get('xMunEnv') || '';
-  const ufIni   = get('UFIni')   || get('UFEnv')   || '';
-  const munFim  = get('xMunFim') || '';
-  const ufFim   = get('UFFim')   || '';
+  const munIni  = get('xMunIni') || doc.querySelector('enderReme xMun')?.textContent || '';
+  const ufIni   = get('UFIni')   || doc.querySelector('enderReme UF')?.textContent   || '';
+  const munFim  = get('xMunFim') || doc.querySelector('enderDest xMun')?.textContent || '';
+  const ufFim   = get('UFFim')   || doc.querySelector('enderDest UF')?.textContent   || '';
 
-  // Partes
-  const cnpjRem  = doc.querySelector('rem CNPJ')?.textContent || cnpjEmit;
-  const nomeRem  = doc.querySelector('rem xNome')?.textContent || '';
-  const cnpjDest = doc.querySelector('dest CNPJ')?.textContent?.replace(/\D/g,'') || '';
-  const nomeDest = doc.querySelector('dest xNome')?.textContent || '';
+  // Remetente e destinatário
+  const cnpjRemRaw  = doc.querySelector('rem CNPJ')?.textContent?.replace(/\D/g,'') || cnpjEmit;
+  const nomeRemBruto= doc.querySelector('rem xNome')?.textContent?.trim() || '';
+  const cnpjDest    = doc.querySelector('dest CNPJ')?.textContent?.replace(/\D/g,'') || '';
+  const nomeDestBruto = doc.querySelector('dest xNome')?.textContent?.trim() || '';
+
+  // Extrai série da primeira NF-e vinculada (posições 22-24 da chave de 44 dígitos)
+  const primeiraChaveNF = doc.getElementsByTagName('chNFe')[0]?.textContent || '';
+  const serieNF = primeiraChaveNF.length === 44 ? String(parseInt(primeiraChaveNF.slice(22,25))) : '';
+
+  // Resolve nomes GVR
+  const nomeRem  = resolverNome(cnpjRemRaw,  nomeRemBruto,  serieNF, true);
+  const nomeDest = resolverNome(cnpjDest,    nomeDestBruto, serieNF, false);
 
   // NF-es
-  const nfes = Array.from(doc.getElementsByTagName('chNFe')).map(e=>e.textContent.slice(25,34)).join(', ');
+  const nfes = Array.from(doc.getElementsByTagName('chNFe'))
+    .map(e => String(parseInt(e.textContent.slice(25,34))).padStart(9,'0'))
+    .join(', ');
 
-  // Valor cobrado
+  // Valores
   const vTPrest = parseFloat(get('vTPrest') || '0');
   const vFrete  = parseFloat(get('vFrete')  || get('vTPrest') || '0');
 
   // Componentes
   const xNomes = Array.from(doc.getElementsByTagName('xNome')).map(e=>e.textContent);
   const vComps = Array.from(doc.getElementsByTagName('vComp')).map(e=>parseFloat(e.textContent||'0'));
-  const componentes = xNomes.map((n,i)=>({nome:n,valor:vComps[i]||0}));
+  const componentes = xNomes.map((n,i)=>({nome:n, valor:vComps[i]||0}));
 
   // Pesos
   let pesoCubado=0, pesoDeclarado=0, volumes=1, metrosCubicos=0;
@@ -362,21 +435,24 @@ function parseCTe(xmlStr, filename) {
     if (med.includes('BASE')&&pesoDeclarado===0)             pesoDeclarado = val;
   });
 
-  const vCarga       = parseFloat(get('vCarga') || '0');
-  const pesoCobrado  = Math.max(pesoDeclarado, pesoCubado) || pesoCubado || pesoDeclarado;
-  const freteNFpct   = vCarga > 0 ? parseFloat((vTPrest/vCarga*100).toFixed(2)) : 0;
-  const freteKg      = pesoCobrado > 0 ? parseFloat((vTPrest/pesoCobrado).toFixed(4)) : 0;
+  const vCarga      = parseFloat(get('vCarga') || '0');
+  const pesoCobrado = Math.max(pesoDeclarado, pesoCubado) || pesoCubado || pesoDeclarado;
+  const freteNFpct  = vCarga > 0 ? parseFloat((vTPrest/vCarga*100).toFixed(2)) : 0;
+  const freteKg     = pesoCobrado > 0 ? parseFloat((vTPrest/pesoCobrado).toFixed(4)) : 0;
 
   return {
     id: Date.now()+Math.random(),
-    arquivo: filename, transportadora, nCT, chave, data, dataISO,
+    arquivo: filename, transportadora, nomeEmitFull, nCT, chave, data, dataISO,
     cepOrigem: cepOrig, cepDestino: cepDest,
-    origem: `${munIni}/${ufIni}`, destino: `${munFim}/${ufFim}`,
+    munOrigem: munIni, ufOrigem: ufIni,
+    munDestino: munFim, ufDestino: ufFim,
     rota: `${munIni}/${ufIni} → ${munFim}/${ufFim}`,
-    cnpjRem: cnpjRem.replace(/\D/g,''), nomeRem, cnpjDest, nomeDest,
-    nfes, pesoDeclarado, pesoCubado, metrosCubicos, volumes,
-    pesoCobrado, valorMercadoria: vCarga, vTPrest, vFrete,
-    freteNFpct, freteKg, componentes,
+    cnpjRem: cnpjRemRaw, nomeRem,
+    cnpjDest, nomeDest,
+    serieNF, nfes,
+    pesoDeclarado, pesoCubado, metrosCubicos, volumes,
+    pesoCobrado, valorMercadoria: vCarga,
+    vTPrest, vFrete, freteNFpct, freteKg, componentes,
     status:'cotando', valorCotado:null, divR:null, divP:null, erroMsg:'',
   };
 }
@@ -389,7 +465,7 @@ async function iniciar(files) {
   document.getElementById('overlay').style.display='flex';
 
   const lista = Array.from(files);
-  for (let i=0;i<lista.length;i++) {
+  for (let i=0; i<lista.length; i++) {
     const f = lista[i];
     document.getElementById('overlay-msg').textContent=`Processando ${i+1}/${lista.length}: ${f.name}`;
     document.getElementById('prog-fill').style.width=`${(i/lista.length)*100}%`;
@@ -405,7 +481,8 @@ async function iniciar(files) {
   }
   document.getElementById('prog-fill').style.width='100%';
   document.getElementById('overlay').style.display='none';
-  detectarNaoConsolidados();
+  alertasGlobais = detectarNaoConsolidados();
+  renderGrupos(alertasGlobais);
   atualizarKPIs();
 }
 
@@ -418,50 +495,40 @@ async function recotar(cte) {
   try {
     const pesoReal   = cte.pesoDeclarado || cte.pesoCubado || 1;
     const pesoCubado = cte.metrosCubicos > 0
-      ? parseFloat((cte.metrosCubicos * 300).toFixed(2))
+      ? parseFloat((cte.metrosCubicos*300).toFixed(2))
       : (cte.pesoCubado || pesoReal);
-
-    // Metragem cúbica total — usa o campo do XML se disponível,
-    // senão deriva do peso cubado (÷300)
-    const metragem = cte.metrosCubicos > 0
+    const metragem   = cte.metrosCubicos > 0
       ? cte.metrosCubicos
-      : parseFloat((pesoCubado / 300).toFixed(4));
-
-    const qtd = cte.volumes || 1;
-
-    // Deriva dimensões de uma caixa cúbica equivalente a partir da metragem total
-    // lado = (metragem_total / qtd_volumes) ^ (1/3)
-    const ladoM = parseFloat(Math.cbrt(metragem / qtd).toFixed(3)) || 0.1;
-
-    console.log(`[AUDITORIA RECOTAR] ${cte.nCT} pesoReal=${pesoReal} pesoCubado=${pesoCubado} metragem=${metragem} qtd=${qtd} lado=${ladoM}`);
+      : parseFloat((pesoCubado/300).toFixed(4));
+    const qtd  = cte.volumes || 1;
+    const lado = parseFloat(Math.cbrt(metragem/qtd).toFixed(3)) || 0.1;
 
     const campos = {
       cepOrigem: cte.cepOrigem, cepDestino: cte.cepDestino,
       cnpjDestinatario: cte.cnpjDest || '66934555001514',
-      pesoReal, pesoCubado,
-      pesoCobrado: Math.max(pesoReal, pesoCubado),
-      qtdVolumes: qtd,
-      valorMercadoria: cte.valorMercadoria || 1,
-      comprimento: ladoM, largura: ladoM, altura: ladoM,
+      pesoReal, pesoCubado, pesoCobrado: Math.max(pesoReal,pesoCubado),
+      qtdVolumes: qtd, valorMercadoria: cte.valorMercadoria || 1,
+      comprimento: lado, largura: lado, altura: lado,
       metragemCubica: metragem,
-      embalagem: 'CX', tipoFrete: '1', modal: 'R',
+      embalagem:'CX', tipoFrete:'1', modal:'R',
     };
 
     let body = {};
-    if (cte.transportadora==='JAMEF')     body = {jamef:campos};
+    if (cte.transportadora==='JAMEF')      body = {jamef: campos};
     else if (cte.transportadora==='BRASPRESS') body = {braspress:{jsessionid:bpJsessionid,...campos}};
-    else body = {jamef:campos};
+    else body = {jamef: campos};
 
-    const resp  = await fetch(`${PROXY}/api/cotacao`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const resp   = await fetch(`${PROXY}/api/cotacao`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const result = await resp.json();
-    const cotacao = result.resultados?.find(r=>r.transportadora===cte.transportadora)||result.resultados?.[0];
+    const cotacao = result.resultados?.find(r=>r.transportadora===cte.transportadora) || result.resultados?.[0];
 
-    if (cotacao?.valorTotal!=null) {
+    if (cotacao?.valorTotal != null) {
       cte.valorCotado = cotacao.valorTotal;
-      cte.divR = parseFloat((cte.vTPrest-cotacao.valorTotal).toFixed(2));
-      cte.divP = cotacao.valorTotal>0 ? parseFloat(((cte.vTPrest-cotacao.valorTotal)/cotacao.valorTotal*100).toFixed(2)) : 0;
+      cte.divR = parseFloat((cte.vTPrest - cotacao.valorTotal).toFixed(2));
+      cte.divP = cotacao.valorTotal > 0
+        ? parseFloat(((cte.vTPrest - cotacao.valorTotal)/cotacao.valorTotal*100).toFixed(2)) : 0;
       const p = Math.abs(cte.divP);
-      cte.status = p<=10?'ok':p<=20?'warn':'crit';
+      cte.status = p<=10?'ok': p<=20?'warn':'crit';
     } else {
       cte.status='erro'; cte.erroMsg=result.erros?.[0]?.erro||'Sem retorno';
     }
@@ -472,80 +539,80 @@ async function recotar(cte) {
 
 // ── DETECTAR NÃO CONSOLIDADOS ──
 function detectarNaoConsolidados() {
-  // Agrupa por: transportadora + cnpjRem + cnpjDest + dataISO
   const grupos = {};
   dados.forEach(d => {
     if (!d.cnpjRem || !d.cnpjDest || !d.dataISO) return;
-    const key = `${d.transportadora}|${d.cnpjRem}|${d.cnpjDest}|${d.dataISO}`;
-    if (!grupos[key]) grupos[key] = [];
-    grupos[key].push(d);
+    const k = `${d.transportadora}|${d.cnpjRem}|${d.cnpjDest}|${d.dataISO}`;
+    if (!grupos[k]) grupos[k] = [];
+    grupos[k].push(d);
   });
-
-  const alertas = Object.entries(grupos).filter(([,g])=>g.length>1).map(([k,g])=>({
-    key:k, transportadora:g[0].transportadora,
-    nomeRem:g[0].nomeRem, cnpjRem:g[0].cnpjRem,
-    nomeDest:g[0].nomeDest, cnpjDest:g[0].cnpjDest,
-    data:g[0].data, rota:g[0].rota,
-    totalFrete:parseFloat(g.reduce((s,c)=>s+c.vTPrest,0).toFixed(2)),
-    ctes:g
-  }));
-
-  renderGrupos(alertas);
-  return alertas;
+  return Object.entries(grupos)
+    .filter(([,g]) => g.length > 1)
+    .map(([,g]) => ({
+      transportadora: g[0].transportadora,
+      nomeEmitFull:   g[0].nomeEmitFull,
+      nomeRem:  g[0].nomeRem,  cnpjRem:  g[0].cnpjRem,
+      nomeDest: g[0].nomeDest, cnpjDest: g[0].cnpjDest,
+      data: g[0].data, rota: g[0].rota,
+      totalFrete: parseFloat(g.reduce((s,c)=>s+c.vTPrest,0).toFixed(2)),
+      ctes: g,
+    }));
 }
 
+// ── RENDER GRUPOS ──
 function renderGrupos(alertas) {
   const container = document.getElementById('grupos-container');
-  const semAlertas = document.getElementById('sem-alertas');
-
-  if (!alertas.length) {
-    semAlertas.style.display='block';
-    container.querySelectorAll('.grupo-card').forEach(el=>el.remove());
-    return;
-  }
-  semAlertas.style.display='none';
   container.querySelectorAll('.grupo-card').forEach(el=>el.remove());
+  document.getElementById('sem-alertas').style.display = alertas.length ? 'none' : 'block';
+
+  // Banner
+  const banner = document.getElementById('nc-banner');
+  if (alertas.length > 0) {
+    const totalCtes = alertas.reduce((s,g)=>s+g.ctes.length,0);
+    document.getElementById('nc-banner-txt').textContent =
+      `⚠️ ${alertas.length} grupo(s) de frete não consolidado detectado(s) — ${totalCtes} CT-e(s) para contestação`;
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
 
   alertas.forEach(g => {
     const div = document.createElement('div');
-    div.className='grupo-card';
-    const tpClass = g.transportadora==='JAMEF'?'tp-jamef':g.transportadora==='BRASPRESS'?'tp-braspress':'tp-outro';
-    div.innerHTML=`
-      <div class="grupo-header">
-        <div>
-          <div class="grupo-title">
-            <span class="tp-badge ${tpClass}">${g.transportadora}</span>
-            &nbsp;${g.data} · ${g.rota}
-          </div>
-          <div class="grupo-meta" style="margin-top:4px">
-            Remetente: <strong>${g.nomeRem||g.cnpjRem}</strong> &nbsp;→&nbsp;
-            Destinatário: <strong>${g.nomeDest||g.cnpjDest}</strong>
-          </div>
+    div.className = 'grupo-card';
+    const tpCls = g.transportadora==='JAMEF'?'tp-jamef':g.transportadora==='BRASPRESS'?'tp-braspress':'tp-outro';
+    const totalFrete = fmtR(g.totalFrete);
+    div.innerHTML = `
+      <div class="grupo-hdr">
+        <div class="grupo-hdr-main">
+          De: <strong>${g.nomeRem}</strong> (${fmtCNPJ(g.cnpjRem)})
+          → Para: <strong>${g.nomeDest}</strong> (${fmtCNPJ(g.cnpjDest)})
+          <span class="transp"> | Transportadora: ${g.nomeEmitFull}</span>
+          | Data: ${g.data}
         </div>
-        <div style="text-align:right">
-          <div class="grupo-total">${fmtR(g.totalFrete)}</div>
-          <div class="grupo-meta">${g.ctes.length} CT-es separados</div>
+        <div class="grupo-hdr-stats">
+          <span class="grupo-stat">${g.ctes.length} CT-e(s) não consolidados</span>
+          <span class="grupo-stat">Total frete: <strong>${totalFrete}</strong></span>
         </div>
       </div>
       <div style="overflow-x:auto">
         <table class="tbl">
           <thead><tr>
-            <th>Nº CT-e</th><th>Chave</th><th>NF-e(s)</th>
-            <th>Peso (kg)</th><th>Volumes</th><th>Frete R$</th><th>Total R$</th>
+            <th>Nº CT-e</th><th>Loja / Dest.</th><th>NF-e(s)</th>
+            <th>Vl. Frete</th><th>Vl. NF</th><th>Peso (kg)</th><th>Vol.</th>
           </tr></thead>
           <tbody>
             ${g.ctes.map(c=>`<tr>
               <td class="mono">${c.nCT}</td>
-              <td class="mono" style="font-size:11px">${c.chave?c.chave.slice(0,20)+'…':'—'}</td>
-              <td style="font-size:12px">${c.nfes||'—'}</td>
-              <td>${c.pesoCobrado>0?c.pesoCobrado.toFixed(2):'—'}</td>
-              <td>${c.volumes||'—'}</td>
+              <td>${c.nomeDest}</td>
+              <td class="mono">${c.nfes||'—'}</td>
               <td class="mono">${fmtR(c.vFrete)}</td>
-              <td class="mono"><strong>${fmtR(c.vTPrest)}</strong></td>
+              <td class="mono">${fmtR(c.valorMercadoria)}</td>
+              <td>${c.pesoCobrado>0?c.pesoCobrado.toFixed(3):'—'}</td>
+              <td>${c.volumes||'—'}</td>
             </tr>`).join('')}
-            <tr style="background:var(--amber-bg)">
-              <td colspan="5" style="font-weight:700;color:var(--amber)">Total cobrado separado</td>
-              <td colspan="2" class="mono" style="font-weight:800;color:var(--red)">${fmtR(g.totalFrete)}</td>
+            <tr style="background:var(--amber-bg);font-weight:700">
+              <td colspan="3" style="color:var(--amber)">Total cobrado separado</td>
+              <td colspan="4" class="mono" style="color:var(--red)">${totalFrete}</td>
             </tr>
           </tbody>
         </table>
@@ -556,7 +623,8 @@ function renderGrupos(alertas) {
 }
 
 // ── RENDER TABELA AUDITORIA ──
-const fmtR = v => v!=null ? 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
+const fmtR    = v => v!=null ? 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
+const fmtCNPJ = v => { const d=(v||'').replace(/\D/g,'').padStart(14,'0'); return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8,12)}-${d.slice(12)}`; };
 
 function renderLinha(cte) {
   const tr=document.createElement('tr'); tr.id=`row-${cte.id}`;
@@ -577,15 +645,22 @@ function htmlLinha(d) {
     const s=d.divR>0?'+':'';
     divHtml=`<span class="${cls}">${s}${fmtR(d.divR)}<br><small>${s}${d.divP}%</small></span>`;
   } else if(['erro','sem-sessao'].includes(d.status)){
-    divHtml=`<span style="font-size:11px;color:var(--amber)">${d.erroMsg}</span>`;
+    divHtml=`<span style="font-size:10px;color:var(--amber)">${d.erroMsg}</span>`;
   }
   return `
     <td><span class="tp-badge ${tpCls}">${d.transportadora}</span></td>
     <td class="mono">${d.nCT}</td>
     <td>${d.data}</td>
-    <td style="font-size:12px">${d.origem}<br><span style="color:var(--gray-400)">→ ${d.destino}</span></td>
-    <td>${d.pesoCobrado>0?d.pesoCobrado.toFixed(2)+' kg':'—'}</td>
     <td class="mono">${fmtR(d.valorMercadoria)}</td>
+    <td>${d.pesoCobrado>0?d.pesoCobrado.toFixed(3):'—'}</td>
+    <td>${d.volumes||'—'}</td>
+    <td style="font-size:12px">${d.nomeRem}</td>
+    <td style="font-size:12px">${d.munOrigem}</td>
+    <td>${d.ufOrigem}</td>
+    <td style="font-size:12px">${d.nomeDest}</td>
+    <td style="font-size:12px">${d.munDestino}</td>
+    <td>${d.ufDestino}</td>
+    <td class="mono" style="font-size:11px">${d.nfes||'—'}</td>
     <td class="mono"><strong>${fmtR(d.vTPrest)}</strong></td>
     <td class="mono">${fmtR(d.valorCotado)}</td>
     <td>${divHtml}</td>
@@ -605,43 +680,39 @@ function atualizarKPIs() {
   const tCot = dados.reduce((s,d)=>s+(d.valorCotado||0),0);
   const tDiv = tCob-tCot;
 
-  document.getElementById('k-total').textContent  = n;
-  document.getElementById('k-ok').textContent     = ok;
-  document.getElementById('k-warn').textContent   = warn;
-  document.getElementById('k-crit').textContent   = crit;
-  document.getElementById('k-pend').textContent   = pend;
-  document.getElementById('k-cobrado').textContent= fmtR(tCob);
-  document.getElementById('k-cotado').textContent = tCot>0?fmtR(tCot):'—';
+  document.getElementById('k-total').textContent   = n;
+  document.getElementById('k-ok').textContent      = ok;
+  document.getElementById('k-warn').textContent    = warn;
+  document.getElementById('k-crit').textContent    = crit;
+  document.getElementById('k-pend').textContent    = pend;
+  document.getElementById('k-cobrado').textContent = fmtR(tCob);
+  document.getElementById('k-cotado').textContent  = tCot>0?fmtR(tCot):'—';
   const divEl=document.getElementById('k-div');
   divEl.textContent=(tDiv>=0?'+':'')+fmtR(tDiv);
   divEl.className='kv '+(tDiv>0?'crit':tDiv<0?'ok':'');
-
-  // Conta grupos não consolidados
-  const grupos = {};
-  dados.forEach(d=>{
-    if(!d.cnpjRem||!d.cnpjDest||!d.dataISO)return;
-    const k=`${d.transportadora}|${d.cnpjRem}|${d.cnpjDest}|${d.dataISO}`;
-    grupos[k]=(grupos[k]||0)+1;
-  });
-  const nConsolid = Object.values(grupos).filter(v=>v>1).length;
-  document.getElementById('k-nconsolid').textContent = nConsolid;
+  document.getElementById('k-nconsolid').textContent = alertasGlobais.length;
 }
 
 // ── DETALHE ──
 function verDetalhe(id) {
-  const d=dados.find(x=>x.id===id); if(!d)return;
+  const d=dados.find(x=>x.id===id); if(!d) return;
   document.getElementById('modal-title').textContent=`CT-e ${d.nCT} — ${d.transportadora}`;
   const rows=[
-    ['Arquivo',d.arquivo],['Nº CT-e',d.nCT],['Chave',d.chave?d.chave:'—'],
-    ['Data emissão',d.data],['Remetente',d.nomeRem||'—'],['Destinatário',d.nomeDest||'—'],
-    ['Origem',`${d.origem} · CEP ${d.cepOrigem}`],['Destino',`${d.destino} · CEP ${d.cepDestino}`],
-    ['NF-e(s)',d.nfes||'—'],['Peso declarado',`${d.pesoDeclarado} kg`],
-    ['Peso cubado',`${d.pesoCubado} kg`],['Metragem',`${d.metrosCubicos} m³`],
-    ['Peso cobrado',`${d.pesoCobrado} kg`],['Volumes',d.volumes],
-    ['Valor mercadoria',fmtR(d.valorMercadoria)],
+    ['Arquivo',d.arquivo],['Nº CT-e',d.nCT],['Chave',d.chave||'—'],
+    ['Data emissão',d.data],
+    ['Remetente',`${d.nomeRem} (${fmtCNPJ(d.cnpjRem)})`],
+    ['Destinatário',`${d.nomeDest} (${fmtCNPJ(d.cnpjDest)})`],
+    ['Origem',`${d.munOrigem}/${d.ufOrigem} · CEP ${d.cepOrigem}`],
+    ['Destino',`${d.munDestino}/${d.ufDestino} · CEP ${d.cepDestino}`],
+    ['NF-e(s)',d.nfes||'—'],['Série NF',d.serieNF||'—'],
+    ['Peso declarado',`${d.pesoDeclarado} kg`],
+    ['Peso cubado',`${d.pesoCubado} kg`],
+    ['Metragem',`${d.metrosCubicos} m³`],
+    ['Peso cobrado',`${d.pesoCobrado} kg`],
+    ['Volumes',d.volumes],['Valor mercadoria',fmtR(d.valorMercadoria)],
   ];
   let html=rows.map(([l,v])=>`<div class="drow"><span class="dl">${l}</span><span class="dv">${v}</span></div>`).join('');
-  html+=`<div class="sec-label-m">Cobrança e auditoria</div>`;
+  html+=`<div class="sec-lbl">Cobrança e auditoria</div>`;
   const audit=[
     ['Valor cobrado (CT-e)',fmtR(d.vTPrest)],['Valor recotado',fmtR(d.valorCotado)],
     ['Frete/NF%',d.freteNFpct>0?d.freteNFpct+'%':'—'],
@@ -651,7 +722,7 @@ function verDetalhe(id) {
   ];
   html+=audit.map(([l,v])=>`<div class="drow"><span class="dl">${l}</span><span class="dv">${v}</span></div>`).join('');
   if(d.componentes?.length>0){
-    html+=`<div class="sec-label-m">Componentes do frete cobrado</div>`;
+    html+=`<div class="sec-lbl">Componentes do frete cobrado</div>`;
     html+=`<table class="comp-tbl"><thead><tr><th>Componente</th><th style="text-align:right">Valor</th></tr></thead><tbody>`;
     d.componentes.forEach(c=>{html+=`<tr><td>${c.nome}</td><td style="text-align:right;font-family:monospace">${fmtR(c.valor)}</td></tr>`;});
     html+=`</tbody></table>`;
@@ -661,78 +732,80 @@ function verDetalhe(id) {
 }
 function fecharModal(e){if(!e||e.target===document.getElementById('modal-bg'))document.getElementById('modal-bg').classList.remove('open');}
 
-// ── EXPORTAR AUDITORIA ──
+// ── EXPORTAR AUDITORIA XLSX ──
 function exportarAuditoriaXLSX() {
-  if(!dados.length)return;
+  if(!dados.length) return;
   const wb=XLSX.utils.book_new();
-  const hdrs=['Transportadora','Nº CT-e','Chave Acesso','Data','Remetente','CNPJ Rem','Destinatário','CNPJ Dest','Origem','Destino','CEP Orig','CEP Dest','NF-e(s)','Peso Cob (kg)','Volumes','Valor NF (R$)','Cobrado (R$)','Recotado (R$)','Diverg R$','Diverg %','Frete/NF%','Status'];
+  const hdrs=['Emissor DACTe','Nº DACTe','Data Emissão','Vl. NF (R$)','Peso (kg)','Volumes','Remetente','Cidade Rem.','UF Rem.','Destinatário','Cidade Dest.','UF Dest.','NF-e(s)','Vl. Frete (R$)','Recotado (R$)','Diverg R$','Diverg %','Status'];
   const rows=[hdrs,...dados.map(d=>[
-    d.transportadora,d.nCT,d.chave,d.data,d.nomeRem,d.cnpjRem,d.nomeDest,d.cnpjDest,
-    d.origem,d.destino,d.cepOrigem,d.cepDestino,d.nfes,
-    d.pesoCobrado?.toFixed(2)||'',d.volumes,
-    d.valorMercadoria?.toFixed(2)||'',d.vTPrest?.toFixed(2)||'',
-    d.valorCotado?.toFixed(2)||'',d.divR?.toFixed(2)||'',
-    d.divP?.toFixed(2)||'',d.freteNFpct?.toFixed(2)||'',d.status
+    d.transportadora, d.nCT, d.data,
+    d.valorMercadoria?.toFixed(2)||'',
+    d.pesoCobrado?.toFixed(3)||'', d.volumes,
+    d.nomeRem, d.munOrigem, d.ufOrigem,
+    d.nomeDest, d.munDestino, d.ufDestino,
+    d.nfes, d.vTPrest?.toFixed(2)||'',
+    d.valorCotado?.toFixed(2)||'',
+    d.divR?.toFixed(2)||'', d.divP?.toFixed(2)||'', d.status
   ])];
   const ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[14,10,44,10,28,16,28,16,16,16,10,10,28,12,8,14,14,14,12,10,10,12].map(w=>({wch:w}));
+  ws['!cols']=[20,10,12,14,10,8,28,18,6,28,18,6,20,14,14,12,10,12].map(w=>({wch:w}));
   XLSX.utils.book_append_sheet(wb,ws,'Auditoria');
   XLSX.writeFile(wb,`auditoria_cte_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
-// ── EXPORTAR NÃO CONSOLIDADOS ──
+// ── EXPORTAR NÃO CONSOLIDADOS XLSX ──
 function exportarConsolidadoXLSX() {
-  const grupos={};
-  dados.forEach(d=>{
-    if(!d.cnpjRem||!d.cnpjDest||!d.dataISO)return;
-    const k=`${d.transportadora}|${d.cnpjRem}|${d.cnpjDest}|${d.dataISO}`;
-    if(!grupos[k])grupos[k]=[];
-    grupos[k].push(d);
-  });
-  const alertas=Object.entries(grupos).filter(([,g])=>g.length>1).map(([,g])=>g);
-  if(!alertas.length){alert('Nenhum frete não consolidado encontrado.');return;}
-
+  if(!alertasGlobais.length){alert('Nenhum frete não consolidado encontrado.');return;}
   const wb=XLSX.utils.book_new();
-  const hdrs=['Transportadora','CNPJ Transp','Data','Rota','Remetente','CNPJ Rem','Destinatário','CNPJ Dest','Nº CT-e','Chave Acesso','NF-e(s)','Frete R$','Total R$','Peso (kg)','Volumes','Motivo'];
+  const hdrs=['Transportadora','Data','Remetente','CNPJ Rem.','Destinatário','CNPJ Dest.','Nº CT-e','NF-e(s)','Vl. Frete R$','Vl. NF R$','Peso (kg)','Volumes','Motivo'];
   const rows=[hdrs];
-  alertas.forEach(g=>{
-    g.forEach(c=>{
+  alertasGlobais.forEach(g=>{
+    g.ctes.forEach(c=>{
       rows.push([
-        c.transportadora,'',c.data,c.rota,
-        c.nomeRem,c.cnpjRem,c.nomeDest,c.cnpjDest,
-        c.nCT,c.chave,c.nfes,
-        c.vFrete?.toFixed(2)||'',c.vTPrest?.toFixed(2)||'',
-        c.pesoCobrado?.toFixed(2)||'',c.volumes||'',
+        g.nomeEmitFull, c.data,
+        g.nomeRem, fmtCNPJ(g.cnpjRem),
+        g.nomeDest, fmtCNPJ(g.cnpjDest),
+        c.nCT, c.nfes,
+        c.vFrete?.toFixed(2)||'', c.valorMercadoria?.toFixed(2)||'',
+        c.pesoCobrado?.toFixed(3)||'', c.volumes||'',
         'Frete não consolidado — mesmo remetente, destinatário, data e transportadora'
       ]);
     });
-    rows.push(['---TOTAL GRUPO---','','','','','','','','','','','',
-      g.reduce((s,c)=>s+c.vTPrest,0).toFixed(2),'','','']);
+    rows.push(['TOTAL','','','','','','','',
+      g.totalFrete.toFixed(2),'','','','']);
     rows.push([]);
   });
   const ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[14,16,10,30,28,16,28,16,10,44,28,12,12,10,8,60].map(w=>({wch:w}));
+  ws['!cols']=[30,10,28,18,28,18,10,22,14,14,10,8,60].map(w=>({wch:w}));
   XLSX.utils.book_append_sheet(wb,ws,'Frete Não Consolidado');
 
-  // Aba resumo
   const rsm=[['RESUMO — FRETES NÃO CONSOLIDADOS'],[''],
-    ['Transportadora','Data','Rota','Remetente','Destinatário','Qtd CT-es','Total Frete R$']];
-  alertas.forEach(g=>rsm.push([
-    g[0].transportadora,g[0].data,g[0].rota,g[0].nomeRem,g[0].nomeDest,
-    g.length,g.reduce((s,c)=>s+c.vTPrest,0).toFixed(2)
-  ]));
-  rsm.push([],['Total grupos',alertas.length],
-    ['Total CT-es',alertas.reduce((s,g)=>s+g.length,0)],
-    ['Total frete',alertas.reduce((s,g)=>s+g.reduce((a,c)=>a+c.vTPrest,0),0).toFixed(2)]);
+    ['Transportadora','Data','Remetente','Destinatário','Qtd CT-es','Total Frete R$']];
+  alertasGlobais.forEach(g=>rsm.push([g.nomeEmitFull,g.data,g.nomeRem,g.nomeDest,g.ctes.length,g.totalFrete.toFixed(2)]));
+  rsm.push([],
+    ['Total de grupos', alertasGlobais.length],
+    ['Total de CT-es',  alertasGlobais.reduce((s,g)=>s+g.ctes.length,0)],
+    ['Total em frete',  alertasGlobais.reduce((s,g)=>s+g.totalFrete,0).toFixed(2)],
+    ['Gerado em', new Date().toLocaleString('pt-BR')]);
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rsm),'Resumo Contestação');
-  XLSX.writeFile(wb,`nao_consolidados_${new Date().toISOString().slice(0,10)}.xlsx`);
+  XLSX.writeFile(wb,`contestacao_nao_consolidados_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// ── EXPORTAR NÃO CONSOLIDADOS PDF ──
+function exportarConsolidadoPDF() {
+  if(!alertasGlobais.length){alert('Nenhum frete não consolidado encontrado.');return;}
+  // Abre janela de impressão focada na aba de não consolidados
+  switchTab('consolidado', document.querySelectorAll('.tab-btn')[1]);
+  setTimeout(()=>window.print(), 300);
 }
 
 function limpar() {
   dados=[];
+  alertasGlobais=[];
   document.getElementById('tbody-audit').innerHTML='';
   document.getElementById('sec-resultado').style.display='none';
   document.getElementById('prog-wrap').style.display='none';
+  document.getElementById('nc-banner').style.display='none';
   renderGrupos([]);
   atualizarKPIs();
 }
