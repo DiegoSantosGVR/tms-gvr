@@ -699,6 +699,21 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') { setCORS(res); res.writeHead(204); res.end(); return; }
 
   // Serve index.html
+  if (req.method === 'GET' && pathname === '/auditoria') {
+    const filePath = [
+      '/opt/render/project/src/auditoria.html',
+      path.join(process.cwd(), 'auditoria.html'),
+      path.join(__dirname, 'auditoria.html')
+    ].find(p => fs.existsSync(p));
+    if (filePath) {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(fs.readFileSync(filePath, 'utf-8'));
+    } else {
+      res.writeHead(404); res.end('auditoria.html not found');
+    }
+    return;
+  }
+
   if (req.method === 'GET' && (pathname === '/' || pathname === '/index.html')) {
     // Tenta múltiplos caminhos possíveis
     const possiblePaths = [

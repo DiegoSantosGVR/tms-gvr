@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TMS GVR — Auditoria de CT-e</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --red: #C8102E; --blue: #1B3F6E; --blue-light: #eef3fa;
+    --gray-50: #f8f8f7; --gray-100: #efefed; --gray-200: #dedcda;
+    --gray-400: #9e9c99; --gray-600: #5c5a57; --gray-800: #2c2b29;
+    --green: #1a7f4b; --green-bg: #edf7f2;
+    --amber: #b45309; --amber-bg: #fffbeb;
+    --shadow-md: 0 4px 16px rgba(0,0,0,.10);
+    --radius: 10px; --font: 'Segoe UI', system-ui, sans-serif;
+  }
+  body { font-family: var(--font); background: var(--gray-50); color: var(--gray-800); min-height: 100vh; display: flex; flex-direction: column; }
+  header { background: var(--blue); padding: 0 32px; height: 56px; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--shadow-md); }
+  .logo { display: flex; align-items: center; gap: 14px; }
+  .logo-gvr { font-size: 18px; font-weight: 800; color: #fff; }
+  .logo-sep { width: 1px; height: 22px; background: rgba(255,255,255,.2); }
+  .logo-sub { font-size: 12px; color: rgba(255,255,255,.6); }
+  .nav-link { color: rgba(255,255,255,.75); font-size: 13px; text-decoration: none; padding: 6px 14px; border-radius: 6px; border: 1px solid rgba(255,255,255,.2); transition: all .15s; }
+  .nav-link:hover { background: rgba(255,255,255,.1); color: #fff; }
+  main { flex: 1; padding: 28px 20px; max-width: 1100px; margin: 0 auto; width: 100%; }
+  .card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-md); border: 1px solid var(--gray-100); overflow: hidden; margin-bottom: 20px; }
+  .card-header { padding: 16px 22px; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--gray-100); }
+  .card-header.blue { background: var(--blue); color: #fff; }
+  .card-header.gray { background: var(--gray-50); color: var(--gray-800); }
+  .card-body { padding: 22px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; font-family: var(--font); transition: all .18s; }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-primary:hover { background: #142f54; }
+  .btn-outline { background: #fff; color: var(--blue); border: 1.5px solid var(--blue); }
+  .btn-outline:hover { background: var(--blue-light); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  /* DROP ZONE */
+  .drop-zone { border: 2px dashed var(--gray-200); border-radius: var(--radius); padding: 48px 24px; text-align: center; cursor: pointer; transition: all .2s; background: var(--gray-50); }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: var(--blue); background: var(--blue-light); }
+  .drop-zone .icon { font-size: 40px; margin-bottom: 12px; }
+  .drop-zone h3 { font-size: 15px; font-weight: 700; color: var(--gray-800); margin-bottom: 6px; }
+  .drop-zone p { font-size: 13px; color: var(--gray-400); }
+
+  /* RESUMO */
+  .resumo-bar { display: flex; gap: 20px; flex-wrap: wrap; padding: 18px 22px; background: var(--blue); color: #fff; }
+  .resumo-item .rv { font-size: 22px; font-weight: 800; }
+  .resumo-item .rl { font-size: 11px; color: rgba(255,255,255,.6); text-transform: uppercase; letter-spacing: .4px; margin-top: 2px; }
+  .rv.ok   { color: #6ee7b7; }
+  .rv.warn { color: #fcd34d; }
+  .rv.crit { color: #fca5a5; }
+  .sep { width: 1px; background: rgba(255,255,255,.15); align-self: stretch; margin: 0 4px; }
+
+  /* TABELA */
+  .audit-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .audit-table th { background: var(--gray-50); padding: 10px 12px; text-align: left; font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: .4px; border-bottom: 2px solid var(--gray-100); white-space: nowrap; }
+  .audit-table td { padding: 11px 12px; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
+  .audit-table tr:last-child td { border-bottom: none; }
+  .audit-table tr:hover td { background: var(--gray-50); }
+
+  .tp-badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .tp-jamef     { background: #E8F0FA; color: var(--blue); }
+  .tp-braspress { background: #FFF0F2; color: var(--red); }
+  .tp-outro     { background: var(--gray-100); color: var(--gray-600); }
+
+  .st-badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .st-ok   { background: var(--green-bg); color: var(--green); }
+  .st-warn { background: var(--amber-bg); color: var(--amber); }
+  .st-crit { background: #fff0f2; color: var(--red); }
+  .st-pend { background: var(--gray-100); color: var(--gray-400); }
+
+  .div-pos { color: var(--red); font-weight: 700; }
+  .div-neg { color: var(--green); font-weight: 700; }
+  .mono { font-family: monospace; }
+
+  /* PROGRESS */
+  .progress-wrap { margin-top: 14px; display: none; }
+  .progress-bar { height: 6px; background: var(--gray-100); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--blue); border-radius: 3px; transition: width .3s; }
+  .progress-label { font-size: 12px; color: var(--gray-400); margin-top: 6px; }
+
+  /* ALERT */
+  .alert { border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-top: 12px; line-height: 1.5; }
+  .alert-info  { background: var(--blue-light); border: 1px solid #bfdbfe; color: var(--blue); display: block; }
+  .alert-error { background: #fff0f2; border: 1px solid #ffc1cb; color: #9e0c23; display: none; }
+
+  /* LOADING */
+  #overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,.8); backdrop-filter: blur(2px); z-index: 100; align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
+  .spin { width: 42px; height: 42px; border: 4px solid var(--gray-100); border-top-color: var(--blue); border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #overlay p { font-size: 14px; color: var(--gray-600); font-weight: 500; }
+
+  /* MODAL */
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+  .modal-bg.open { display: flex; }
+  .modal { background: #fff; border-radius: var(--radius); box-shadow: 0 20px 60px rgba(0,0,0,.2); width: 100%; max-width: 580px; max-height: 90vh; overflow-y: auto; }
+  .modal-hdr { padding: 18px 22px; font-size: 15px; font-weight: 700; border-bottom: 1px solid var(--gray-100); display: flex; justify-content: space-between; align-items: center; }
+  .modal-bdy { padding: 22px; }
+  .modal-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--gray-400); line-height: 1; }
+  .drow { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--gray-100); font-size: 13px; gap: 16px; }
+  .drow:last-child { border: none; }
+  .dl { color: var(--gray-600); flex-shrink: 0; }
+  .dv { font-weight: 600; text-align: right; }
+  .sec-label { margin: 14px 0 4px; font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: .5px; }
+  .comp-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .comp-tbl th { background: var(--gray-50); padding: 6px 10px; text-align: left; font-size: 11px; color: var(--gray-400); font-weight: 700; }
+  .comp-tbl td { padding: 7px 10px; border-bottom: 1px solid var(--gray-100); }
+
+  @media (max-width: 768px) { main { padding: 14px; } .audit-table { font-size: 12px; } }
+</style>
+</head>
+<body>
+
+<div id="overlay">
+  <div class="spin"></div>
+  <p id="overlay-msg">Processando CT-es...</p>
+</div>
+
+<div class="modal-bg" id="modal-bg" onclick="fecharModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-hdr">
+      <span id="modal-title">Detalhe</span>
+      <button class="modal-close" onclick="fecharModal()">✕</button>
+    </div>
+    <div class="modal-bdy" id="modal-bdy"></div>
+  </div>
+</div>
+
+<header>
+  <div class="logo">
+    <div class="logo-gvr">GVR Home</div>
+    <div class="logo-sep"></div>
+    <div class="logo-sub">TMS · Auditoria de CT-e</div>
+  </div>
+  <a href="/" class="nav-link">← Voltar ao TMS</a>
+</header>
+
+<main>
+
+  <div class="card">
+    <div class="card-header blue">🔍 Importar CT-es para auditoria</div>
+    <div class="card-body">
+      <div class="drop-zone" id="drop-zone"
+           onclick="document.getElementById('f-xml').click()"
+           ondragover="onDragOver(event)"
+           ondragleave="onDragLeave()"
+           ondrop="onDrop(event)">
+        <div class="icon">📄</div>
+        <h3>Arraste os XMLs dos CT-es aqui</h3>
+        <p>Ou clique para selecionar — JAMEF e BRASPRESS, múltiplos arquivos</p>
+        <input type="file" id="f-xml" multiple accept=".xml" style="display:none" onchange="iniciarProcessamento(this.files)">
+      </div>
+
+      <div class="progress-wrap" id="prog-wrap">
+        <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+        <div class="progress-label" id="prog-label"></div>
+      </div>
+
+      <!-- SESSÃO BRASPRESS -->
+      <div id="bp-session-box" style="margin-top:16px; padding:14px; border:1.5px solid var(--gray-200); border-radius:10px; display:flex; align-items:center; gap:12px; flex-wrap:wrap">
+        <div style="flex:1; min-width:200px">
+          <div style="font-size:12px; font-weight:700; color:var(--gray-600); margin-bottom:4px">SESSÃO BRASPRESS (para recotação automática)</div>
+          <input type="text" id="bp-jsessionid" placeholder="Cole o JSESSIONID da BRASPRESS aqui"
+            style="width:100%; border:1.5px solid var(--gray-200); border-radius:7px; padding:8px 11px; font-size:13px; font-family:monospace">
+        </div>
+        <button class="btn btn-outline" onclick="ativarSessaoBP()" style="white-space:nowrap; flex-shrink:0">
+          Ativar sessão BRASPRESS
+        </button>
+        <div id="bp-status" style="font-size:12px; font-weight:600; color:var(--gray-400)">⬤ Sem sessão</div>
+      </div>
+
+      <div class="alert alert-info">
+        💡 O sistema lê o XML, recota via API e compara com o valor cobrado.
+        <strong>Tolerância: 10%</strong> — OK ≤10% · Alerta 10–20% · Crítico &gt;20%.
+        Com sessão BRASPRESS ativa, CT-es são recotados automaticamente.
+      </div>
+      <div class="alert alert-error" id="alerta"></div>
+    </div>
+  </div>
+
+  <div id="sec-resultado" style="display:none">
+    <div class="card">
+      <div class="resumo-bar" id="resumo-bar">
+        <div class="resumo-item"><div class="rv" id="r-total">0</div><div class="rl">CT-es auditados</div></div>
+        <div class="sep"></div>
+        <div class="resumo-item"><div class="rv ok" id="r-ok">0</div><div class="rl">✅ OK (≤10%)</div></div>
+        <div class="resumo-item"><div class="rv warn" id="r-warn">0</div><div class="rl">⚠️ Alerta (10–20%)</div></div>
+        <div class="resumo-item"><div class="rv crit" id="r-crit">0</div><div class="rl">🔴 Crítico (&gt;20%)</div></div>
+        <div class="resumo-item"><div class="rv" id="r-pend">0</div><div class="rl">⏳ Pendente</div></div>
+        <div class="sep"></div>
+        <div class="resumo-item"><div class="rv" id="r-cobrado">—</div><div class="rl">Total cobrado</div></div>
+        <div class="resumo-item"><div class="rv" id="r-cotado">—</div><div class="rl">Total recotado</div></div>
+        <div class="resumo-item"><div class="rv" id="r-div">—</div><div class="rl">Divergência total</div></div>
+      </div>
+      <div class="card-header gray">
+        <span>Resultados por CT-e</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline btn-sm" onclick="exportar()">⬇ Exportar CSV</button>
+          <button class="btn btn-outline btn-sm" onclick="limpar()">🗑 Limpar</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th>Transportadora</th>
+              <th>Nº CT-e</th>
+              <th>Data</th>
+              <th>Rota</th>
+              <th>Peso cob.</th>
+              <th>Valor NF</th>
+              <th>Cobrado</th>
+              <th>Recotado</th>
+              <th>Divergência</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const PROXY = window.location.origin;
+let dados = [];
+let bpJsessionid = null;
+
+function ativarSessaoBP() {
+  const val = document.getElementById('bp-jsessionid').value.trim();
+  if (!val) {
+    alert('Cole o JSESSIONID da BRASPRESS primeiro.\n\nF12 → Application → Cookies → blue.braspress.com → JSESSIONID');
+    return;
+  }
+  bpJsessionid = val;
+  document.getElementById('bp-status').textContent = '✅ Sessão ativa';
+  document.getElementById('bp-status').style.color = 'var(--green)';
+  document.getElementById('bp-session-box').style.borderColor = 'var(--green)';
+  document.getElementById('bp-session-box').style.background = 'var(--green-bg)';
+
+  // Recota CT-es BRASPRESS pendentes
+  const pendentes = dados.filter(d => d.transportadora === 'BRASPRESS' && d.status === 'sem-sessao');
+  if (pendentes.length > 0) {
+    document.getElementById('overlay').style.display = 'flex';
+    document.getElementById('overlay-msg').textContent = `Recotando ${pendentes.length} CT-e(s) BRASPRESS...`;
+    Promise.all(pendentes.map(d => recotar(d))).then(() => {
+      document.getElementById('overlay').style.display = 'none';
+      atualizarResumo();
+    });
+  }
+}
+
+// ── DRAG & DROP ──
+function onDragOver(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); }
+function onDragLeave()  { document.getElementById('drop-zone').classList.remove('drag-over'); }
+function onDrop(e)      { e.preventDefault(); onDragLeave(); iniciarProcessamento(e.dataTransfer.files); }
+
+// ── PARSE XML ──
+function parseCTe(xmlStr, filename) {
+  const doc = new DOMParser().parseFromString(xmlStr, 'application/xml');
+  const get     = tag => doc.getElementsByTagName(tag)[0]?.textContent?.trim() || '';
+  const getAttr = (tag, attr) => doc.getElementsByTagName(tag)[0]?.getAttribute(attr) || '';
+
+  // Identifica transportadora pelo CNPJ do emitente
+  const cnpjEmit  = doc.querySelector('emit CNPJ')?.textContent || '';
+  const nomeEmit  = doc.querySelector('emit xNome')?.textContent?.toUpperCase() || '';
+  let transportadora = 'OUTRO';
+  if (cnpjEmit.includes('20147617') || nomeEmit.includes('JAMEF'))     transportadora = 'JAMEF';
+  if (cnpjEmit.includes('48740351') || nomeEmit.includes('BRASPRESS')) transportadora = 'BRASPRESS';
+
+  // Identificação
+  const nCT  = get('nCT');
+  const dhEmi = get('dhEmi');
+  const data  = dhEmi ? dhEmi.slice(0,10).split('-').reverse().join('/') : '—';
+
+  // Rota
+  const cepOrig = doc.querySelector('enderReme CEP')?.textContent?.replace(/\D/g,'') || '';
+  const cepDest = doc.querySelector('enderDest CEP')?.textContent?.replace(/\D/g,'') || '';
+  const munIni  = get('xMunIni') || get('xMunEnv') || '';
+  const ufIni   = get('UFIni')   || get('UFEnv')   || '';
+  const munFim  = get('xMunFim') || '';
+  const ufFim   = get('UFFim')   || '';
+
+  // Valor cobrado
+  const vTPrest = parseFloat(get('vTPrest') || '0');
+
+  // Componentes
+  const xNomes = Array.from(doc.getElementsByTagName('xNome')).map(e=>e.textContent);
+  const vComps = Array.from(doc.getElementsByTagName('vComp')).map(e=>parseFloat(e.textContent||'0'));
+  const componentes = xNomes.map((n,i)=>({nome:n, valor:vComps[i]||0}));
+
+  // Pesos / cubagem
+  let pesoCubado=0, pesoDeclarado=0, volumes=1, metrosCubicos=0;
+  Array.from(doc.getElementsByTagName('infQ')).forEach(q => {
+    const med = q.querySelector('tpMed')?.textContent?.toUpperCase() || '';
+    const val = parseFloat(q.querySelector('qCarga')?.textContent || '0');
+    if (med.includes('CUBADO'))                          pesoCubado    = val;
+    if (med.includes('DECLARADO') || med.includes('REAL')) pesoDeclarado = val;
+    if (med.includes('VOLUME') || med.includes('CAIXA')) volumes       = Math.max(volumes, Math.round(val));
+    if (med.includes('METROS') || med.includes('M3'))   metrosCubicos = val;
+    if (med.includes('BASE'))                            pesoDeclarado = pesoDeclarado || val;
+  });
+
+  const vCarga    = parseFloat(get('vCarga') || '0');
+  const cnpjDest  = doc.querySelector('dest CNPJ')?.textContent?.replace(/\D/g,'') || '';
+
+  return {
+    id: Date.now() + Math.random(),
+    arquivo: filename,
+    transportadora, nCT, data,
+    cepOrigem: cepOrig, cepDestino: cepDest,
+    origem: `${munIni}/${ufIni}`, destino: `${munFim}/${ufFim}`,
+    pesoDeclarado, pesoCubado, metrosCubicos,
+    pesoCobrado: Math.max(pesoDeclarado, pesoCubado) || pesoCubado || pesoDeclarado,
+    volumes, valorMercadoria: vCarga, cnpjDestinatario: cnpjDest,
+    vTPrest, componentes,
+    status: 'cotando', valorCotado: null, divR: null, divP: null, erroMsg: '',
+  };
+}
+
+// ── PROCESSA ──
+async function iniciarProcessamento(files) {
+  if (!files || !files.length) return;
+  document.getElementById('alerta').style.display = 'none';
+  document.getElementById('prog-wrap').style.display = 'block';
+  document.getElementById('sec-resultado').style.display = 'block';
+  document.getElementById('overlay').style.display = 'flex';
+
+  const lista = Array.from(files);
+  for (let i = 0; i < lista.length; i++) {
+    const f = lista[i];
+    document.getElementById('overlay-msg').textContent = `Processando ${i+1}/${lista.length}: ${f.name}`;
+    document.getElementById('prog-fill').style.width = `${((i)/lista.length)*100}%`;
+    document.getElementById('prog-label').textContent = `${i+1} de ${lista.length} arquivos`;
+    try {
+      const xml = await f.text();
+      const cte = parseCTe(xml, f.name);
+      dados.push(cte);
+      renderLinha(cte);
+      atualizarResumo();
+      await recotar(cte);
+    } catch(e) {
+      console.error(f.name, e);
+    }
+  }
+  document.getElementById('prog-fill').style.width = '100%';
+  document.getElementById('prog-label').textContent = `${lista.length} arquivos processados`;
+  document.getElementById('overlay').style.display = 'none';
+  atualizarResumo();
+}
+
+// ── RECOTAR ──
+async function recotar(cte) {
+  // BRASPRESS sem sessão — aguarda ativação
+  if (cte.transportadora === 'BRASPRESS' && !bpJsessionid) {
+    cte.status  = 'sem-sessao';
+    cte.erroMsg = 'Cole o JSESSIONID e clique em "Ativar sessão BRASPRESS"';
+    atualizarLinha(cte);
+    return;
+  }
+
+  try {
+    const pesoReal   = cte.pesoDeclarado || cte.pesoCubado || 1;
+    const pesoCubado = cte.metrosCubicos > 0 ? parseFloat((cte.metrosCubicos * 300).toFixed(2)) : cte.pesoCubado;
+    const metragem   = cte.metrosCubicos > 0 ? cte.metrosCubicos : parseFloat((pesoCubado / 300).toFixed(4));
+
+    const campos = {
+      cepOrigem: cte.cepOrigem, cepDestino: cte.cepDestino,
+      cnpjDestinatario: cte.cnpjDestinatario || '66934555001514',
+      pesoReal, pesoCubado,
+      pesoCobrado: Math.max(pesoReal, pesoCubado),
+      qtdVolumes: cte.volumes || 1,
+      valorMercadoria: cte.valorMercadoria || 1,
+      comprimento: 1, largura: 1, altura: 1,
+      metragemCubica: metragem,
+      embalagem: 'CX', tipoFrete: '1', modal: 'R',
+    };
+
+    // Monta body com a transportadora correta
+    let body = {};
+    if (cte.transportadora === 'JAMEF') {
+      body = { jamef: campos };
+    } else if (cte.transportadora === 'BRASPRESS') {
+      body = { braspress: { jsessionid: bpJsessionid, ...campos } };
+    } else {
+      body = { jamef: campos };
+    }
+    const resp = await fetch(`${PROXY}/api/cotacao`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    const result = await resp.json();
+    const cotacao = result.resultados?.find(r=>r.transportadora===cte.transportadora)
+                 || (result.resultados?.length > 0 ? result.resultados[0] : null);
+
+    if (cotacao?.valorTotal != null) {
+      cte.valorCotado = cotacao.valorTotal;
+      cte.divR        = parseFloat((cte.vTPrest - cotacao.valorTotal).toFixed(2));
+      cte.divP        = cotacao.valorTotal > 0
+        ? parseFloat(((cte.vTPrest - cotacao.valorTotal) / cotacao.valorTotal * 100).toFixed(2))
+        : 0;
+      const pct = Math.abs(cte.divP);
+      cte.status = pct <= 10 ? 'ok' : pct <= 20 ? 'warn' : 'crit';
+    } else {
+      cte.status  = 'erro';
+      cte.erroMsg = result.erros?.[0]?.erro || 'Sem retorno da API';
+    }
+  } catch(e) {
+    cte.status  = 'erro';
+    cte.erroMsg = e.message;
+  }
+  atualizarLinha(cte);
+  atualizarResumo();
+}
+
+// ── RENDER ──
+const fmtR = v => v != null
+  ? 'R$ ' + Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})
+  : '—';
+
+function renderLinha(cte) {
+  const tr = document.createElement('tr');
+  tr.id = `row-${cte.id}`;
+  tr.innerHTML = htmlLinha(cte);
+  document.getElementById('tbody').appendChild(tr);
+}
+
+function atualizarLinha(cte) {
+  const tr = document.getElementById(`row-${cte.id}`);
+  if (tr) tr.innerHTML = htmlLinha(cte);
+}
+
+function htmlLinha(d) {
+  const tpClass = {JAMEF:'tp-jamef', BRASPRESS:'tp-braspress', OUTRO:'tp-outro'}[d.transportadora] || 'tp-outro';
+  const stMap   = {ok:'✅ OK', warn:'⚠️ Alerta', crit:'🔴 Crítico', cotando:'⏳ Cotando…', erro:'❌ Erro', 'sem-sessao':'🔑 Sem sessão'};
+  const stClass = {ok:'st-ok', warn:'st-warn', crit:'st-crit', cotando:'st-pend', erro:'st-warn', 'sem-sessao':'st-warn'};
+
+  let divHtml = '—';
+  if (d.divR != null) {
+    const cls  = d.divR > 0 ? 'div-pos' : 'div-neg';
+    const sinal= d.divR > 0 ? '+' : '';
+    divHtml = `<span class="${cls}">${sinal}${fmtR(d.divR)}<br><small>${sinal}${d.divP}%</small></span>`;
+  } else if (['erro','sem-sessao'].includes(d.status)) {
+    divHtml = `<span style="font-size:11px;color:var(--amber)">${d.erroMsg}</span>`;
+  }
+
+  return `
+    <td><span class="tp-badge ${tpClass}">${d.transportadora}</span></td>
+    <td class="mono" style="font-size:12px">${d.nCT}</td>
+    <td>${d.data}</td>
+    <td style="font-size:12px">${d.origem}<br><span style="color:var(--gray-400)">→ ${d.destino}</span></td>
+    <td>${d.pesoCobrado > 0 ? d.pesoCobrado.toFixed(2)+' kg' : '—'}</td>
+    <td class="mono">${fmtR(d.valorMercadoria)}</td>
+    <td class="mono"><strong>${fmtR(d.vTPrest)}</strong></td>
+    <td class="mono">${fmtR(d.valorCotado)}</td>
+    <td>${divHtml}</td>
+    <td><span class="st-badge ${stClass[d.status]||'st-pend'}">${stMap[d.status]||d.status}</span></td>
+    <td><button class="btn btn-outline btn-sm" onclick="verDetalhe(${d.id})">Ver</button></td>
+  `;
+}
+
+function atualizarResumo() {
+  const n      = dados.length;
+  const ok     = dados.filter(d=>d.status==='ok').length;
+  const warn   = dados.filter(d=>d.status==='warn').length;
+  const crit   = dados.filter(d=>d.status==='crit').length;
+  const pend   = dados.filter(d=>['cotando','pend','sem-sessao','erro'].includes(d.status)).length;
+  const tCob   = dados.reduce((s,d)=>s+(d.vTPrest||0), 0);
+  const tCot   = dados.reduce((s,d)=>s+(d.valorCotado||0), 0);
+  const tDiv   = tCob - tCot;
+
+  document.getElementById('r-total').textContent   = n;
+  document.getElementById('r-ok').textContent      = ok;
+  document.getElementById('r-warn').textContent    = warn;
+  document.getElementById('r-crit').textContent    = crit;
+  document.getElementById('r-pend').textContent    = pend;
+  document.getElementById('r-cobrado').textContent = fmtR(tCob);
+  document.getElementById('r-cotado').textContent  = tCot > 0 ? fmtR(tCot) : '—';
+  const divEl = document.getElementById('r-div');
+  divEl.textContent   = tCot > 0 ? (tDiv>=0?'+':'')+fmtR(tDiv) : '—';
+  divEl.className     = 'rv ' + (tDiv > 0 ? 'crit' : tDiv < 0 ? 'ok' : '');
+}
+
+// ── DETALHE ──
+function verDetalhe(id) {
+  const d = dados.find(x=>x.id===id);
+  if (!d) return;
+  document.getElementById('modal-title').textContent = `CT-e ${d.nCT} — ${d.transportadora}`;
+
+  const rows = [
+    ['Arquivo', d.arquivo],
+    ['Nº CT-e', d.nCT],
+    ['Data emissão', d.data],
+    ['Origem', `${d.origem} · CEP ${d.cepOrigem}`],
+    ['Destino', `${d.destino} · CEP ${d.cepDestino}`],
+    ['Peso declarado', `${d.pesoDeclarado} kg`],
+    ['Peso cubado', `${d.pesoCubado} kg`],
+    ['Metragem cúbica', `${d.metrosCubicos} m³`],
+    ['Peso cobrado', `${d.pesoCobrado} kg`],
+    ['Volumes', d.volumes],
+    ['Valor mercadoria', fmtR(d.valorMercadoria)],
+  ];
+
+  let html = rows.map(([l,v])=>`<div class="drow"><span class="dl">${l}</span><span class="dv">${v}</span></div>`).join('');
+
+  html += `<div class="sec-label">Cobrança e auditoria</div>`;
+  const audit = [
+    ['Valor total cobrado', fmtR(d.vTPrest)],
+    ['Valor recotado', fmtR(d.valorCotado)],
+    ['Divergência (R$)', d.divR!=null ? (d.divR>=0?'+':'')+fmtR(d.divR) : d.erroMsg||'—'],
+    ['Divergência (%)', d.divP!=null ? (d.divP>=0?'+':'')+d.divP+'%' : '—'],
+    ['Status', d.status.toUpperCase()],
+  ];
+  html += audit.map(([l,v])=>`<div class="drow"><span class="dl">${l}</span><span class="dv">${v}</span></div>`).join('');
+
+  if (d.componentes?.length > 0) {
+    html += `<div class="sec-label">Componentes do frete cobrado</div>`;
+    html += `<table class="comp-tbl"><thead><tr><th>Componente</th><th style="text-align:right">Valor</th></tr></thead><tbody>`;
+    d.componentes.forEach(c => {
+      html += `<tr><td>${c.nome}</td><td style="text-align:right;font-family:monospace">${fmtR(c.valor)}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+  }
+
+  document.getElementById('modal-bdy').innerHTML = html;
+  document.getElementById('modal-bg').classList.add('open');
+}
+
+function fecharModal(e) {
+  if (!e || e.target===document.getElementById('modal-bg'))
+    document.getElementById('modal-bg').classList.remove('open');
+}
+
+// ── EXPORTAR ──
+function exportar() {
+  const header = ['Transportadora','Nº CT-e','Data','Origem','Destino','CEP Orig','CEP Dest','Peso Cob (kg)','Valor NF (R$)','Cobrado (R$)','Recotado (R$)','Diverg R$','Diverg %','Status'];
+  const rows   = dados.map(d=>[
+    d.transportadora, d.nCT, d.data, d.origem, d.destino, d.cepOrigem, d.cepDestino,
+    d.pesoCobrado?.toFixed(2)||'', d.valorMercadoria?.toFixed(2)||'',
+    d.vTPrest?.toFixed(2)||'', d.valorCotado?.toFixed(2)||'',
+    d.divR?.toFixed(2)||'', d.divP?.toFixed(2)||'', d.status,
+  ]);
+  const csv = [header,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));
+  a.download = `auditoria_cte_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+function limpar() {
+  dados = [];
+  document.getElementById('tbody').innerHTML = '';
+  document.getElementById('sec-resultado').style.display = 'none';
+  document.getElementById('prog-wrap').style.display = 'none';
+  atualizarResumo();
+}
+</script>
+</body>
+</html>
