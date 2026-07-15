@@ -68,12 +68,29 @@ main { flex:1; padding:28px 20px; max-width:1400px; margin:0 auto; width:100%; }
 .session-box.active { border-color:var(--green); background:var(--green-bg); }
 
 /* TABELA PRINCIPAL */
-.tbl { width:100%; border-collapse:collapse; font-size:12px; }
-.tbl th { background:var(--gray-50); padding:8px 10px; text-align:left; font-size:10px; font-weight:700; color:var(--gray-400); text-transform:uppercase; letter-spacing:.4px; border-bottom:2px solid var(--gray-100); white-space:nowrap; }
-.tbl td { padding:9px 10px; border-bottom:1px solid var(--gray-100); vertical-align:middle; }
+.tbl { width:100%; border-collapse:collapse; font-size:12px; table-layout:fixed; }
+.tbl th { background:var(--gray-50); padding:8px 10px; text-align:left; font-size:10px; font-weight:700; color:var(--gray-400); text-transform:uppercase; letter-spacing:.4px; border-bottom:2px solid var(--gray-100); white-space:nowrap; position:relative; overflow:hidden; text-overflow:ellipsis; }
+.tbl td { padding:9px 10px; border-bottom:1px solid var(--gray-100); vertical-align:middle; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .tbl tr:last-child td { border-bottom:none; }
 .tbl tr:hover td { background:var(--gray-50); }
 .mono { font-family:monospace; font-size:11px; }
+
+/* RESIZE HANDLE */
+.resize-handle { position:absolute; right:0; top:0; bottom:0; width:5px; cursor:col-resize; background:transparent; z-index:1; }
+.resize-handle:hover { background:var(--blue); opacity:.4; border-radius:2px; }
+
+/* COL VISIBILITY DROPDOWN */
+.col-menu-wrap { position:relative; display:inline-block; }
+.col-menu-btn { background:#fff; color:var(--blue); border:1.5px solid var(--blue); border-radius:8px; padding:5px 11px; font-size:12px; font-weight:600; cursor:pointer; font-family:var(--font); display:inline-flex; align-items:center; gap:6px; }
+.col-menu-btn:hover { background:var(--blue-light); }
+.col-dropdown { display:none; position:absolute; right:0; top:calc(100% + 4px); background:#fff; border:1.5px solid var(--gray-200); border-radius:10px; box-shadow:var(--shadow-md); z-index:300; min-width:210px; padding:8px 0; }
+.col-dropdown.open { display:block; }
+.col-dd-hdr { padding:8px 14px 6px; font-size:11px; font-weight:700; color:var(--gray-400); text-transform:uppercase; letter-spacing:.4px; border-bottom:1px solid var(--gray-100); margin-bottom:4px; display:flex; justify-content:space-between; align-items:center; }
+.col-dd-hdr button { background:none; border:none; font-size:11px; color:var(--blue); cursor:pointer; font-family:var(--font); font-weight:600; padding:0; }
+.col-item { display:flex; align-items:center; gap:8px; padding:6px 14px; cursor:pointer; font-size:13px; color:var(--gray-800); transition:background .1s; user-select:none; }
+.col-item:hover { background:var(--gray-50); }
+.col-item input[type=checkbox] { width:14px; height:14px; cursor:pointer; accent-color:var(--blue); flex-shrink:0; }
+.c-hidden { display:none !important; }
 
 /* BADGES */
 .tp-badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:700; white-space:nowrap; }
@@ -249,32 +266,42 @@ main { flex:1; padding:28px 20px; max-width:1400px; margin:0 auto; width:100%; }
 
       <!-- ABA AUDITORIA -->
       <div class="tab-pane active" id="tab-auditoria">
-        <div style="display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;border-bottom:1px solid var(--gray-100)">
+        <div style="display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;border-bottom:1px solid var(--gray-100);flex-wrap:wrap">
+          <div class="col-menu-wrap">
+            <button class="col-menu-btn" onclick="toggleColDropdown(event)" id="col-menu-btn">⚙ Colunas</button>
+            <div class="col-dropdown" id="col-dropdown">
+              <div class="col-dd-hdr">
+                <span>Exibir / ocultar</span>
+                <button onclick="resetarColunas()">Mostrar todas</button>
+              </div>
+            </div>
+          </div>
           <button class="btn btn-outline btn-sm" onclick="exportarAuditoriaXLSX()">⬇ Exportar Excel</button>
           <button class="btn btn-outline btn-sm" onclick="limpar()">🗑 Limpar</button>
         </div>
         <div style="overflow-x:auto">
           <table class="tbl">
             <thead>
+
               <tr>
-                <th>Emissor DACTe</th>
-                <th>Nº DACTe</th>
-                <th>Data Emissão</th>
-                <th>Vl. NF</th>
-                <th>Peso (kg)</th>
-                <th>Volumes</th>
-                <th>Remetente</th>
-                <th>Cidade Rem.</th>
-                <th>UF Rem.</th>
-                <th>Destinatário</th>
-                <th>Cidade Dest.</th>
-                <th>UF Dest.</th>
-                <th>NF-e(s)</th>
-                <th>Vl. Frete</th>
-                <th>Recotado</th>
-                <th>Divergência</th>
-                <th>Status</th>
-                <th></th>
+                <th data-col="emissor" class="col-th-emissor"><span>Emissor DACTe</span><div class="resize-handle" onmousedown="startResize(event,this)"></div></th>
+                <th data-col="ndacte" class="col-th-ndacte"><span>Nº DACTe</span><div class="resize-handle" onmousedown="startResize(event,this)"></div></th>
+                <th data-col="data" class="col-th-data"><span>Data Emissão</span><div class="resize-handle" onmousedown="startResize(event,this)"></div></th>
+                <th data-col="vlnf" class="col-th-vlnf"><span>Vl. NF</span><div class="resize-handle" onmousedown="startResize(event,this)"></div></th>
+                <th data-col="peso" class="col-th-peso"><span>Peso (kg)</span><div class="resize-handle" onmousedown="startResize(event,this)"></div></th>
+                <th data-col="volumes" class="col-th-volumes"><span>Volumes</span><div class="resize-handle" onmousedown="startResize(event,this)"></div></th>
+                <th data-col="remetente" class="col-th-remetente"><span>Remetente</span><div class="resize-handle" onmousedown="startResize(event,this)"></div></th>
+                <th data-col="cidrem" class="col-th-cidrem"><span>Cidade Rem.</span><div class="resize-handle" onmousedown="startResize(event,this)"></div></th>
+                <th data-col="ufrem" class="col-th-ufrem"><span>UF Rem.</span><div class="resize-handle" onmousedown="startResize(event,this)"></div></th>
+                <th data-col="destinat" class="col-th-destinat"><span>Destinatário</span><div class="resize-handle" onmousedown="startResize(event,this)"></div></th>
+                <th data-col="ciddest" class="col-th-ciddest"><span>Cidade Dest.</span><div class="resize-handle" onmousedown="startResize(event,this)"></div></th>
+                <th data-col="ufdest" class="col-th-ufdest"><span>UF Dest.</span><div class="resize-handle" onmousedown="startResize(event,this)"></div></th>
+                <th data-col="nfes" class="col-th-nfes"><span>NF-e(s)</span><div class="resize-handle" onmousedown="startResize(event,this)"></div></th>
+                <th data-col="vlfrete" class="col-th-vlfrete"><span>Vl. Frete</span><div class="resize-handle" onmousedown="startResize(event,this)"></div></th>
+                <th data-col="recotado" class="col-th-recotado"><span>Recotado</span><div class="resize-handle" onmousedown="startResize(event,this)"></div></th>
+                <th data-col="diverg" class="col-th-diverg"><span>Divergência</span><div class="resize-handle" onmousedown="startResize(event,this)"></div></th>
+                <th data-col="status" class="col-th-status"><span>Status</span><div class="resize-handle" onmousedown="startResize(event,this)"></div></th>
+                <th data-col="acoes" class="col-th-acoes"><span></span><div class="resize-handle" onmousedown="startResize(event,this)"></div></th>
               </tr>
             </thead>
             <tbody id="tbody-audit"></tbody>
@@ -653,24 +680,24 @@ function htmlLinha(d) {
     divHtml=`<span style="font-size:10px;color:var(--amber)">${d.erroMsg}</span>`;
   }
   return `
-    <td><span class="tp-badge ${tpCls}">${d.transportadora}</span></td>
-    <td class="mono">${d.nCT}</td>
-    <td>${d.data}</td>
-    <td class="mono">${fmtR(d.valorMercadoria)}</td>
-    <td>${d.pesoCobrado>0?d.pesoCobrado.toFixed(3):'—'}</td>
-    <td>${d.volumes||'—'}</td>
-    <td style="font-size:12px">${d.nomeRem}</td>
-    <td style="font-size:12px">${d.munOrigem}</td>
-    <td>${d.ufOrigem}</td>
-    <td style="font-size:12px">${d.nomeDest}</td>
-    <td style="font-size:12px">${d.munDestino}</td>
-    <td>${d.ufDestino}</td>
-    <td class="mono" style="font-size:11px">${d.nfes||'—'}</td>
-    <td class="mono"><strong>${fmtR(d.vTPrest)}</strong></td>
-    <td class="mono">${fmtR(d.valorCotado)}</td>
-    <td>${divHtml}</td>
-    <td><span class="st-badge ${stCls[d.status]||'st-pend'}">${stMap[d.status]||d.status}</span></td>
-    <td><button class="btn btn-outline btn-sm" onclick="verDetalhe(${d.id})">Ver</button></td>
+    <td class="col-th-emissor"  ><span class="tp-badge ${tpCls}">${d.transportadora}</span></td>
+    <td class="col-th-ndacte mono">${d.nCT}</td>
+    <td class="col-th-data"     >${d.data}</td>
+    <td class="col-th-vlnf mono">${fmtR(d.valorMercadoria)}</td>
+    <td class="col-th-peso"     >${d.pesoCobrado>0?d.pesoCobrado.toFixed(3):'—'}</td>
+    <td class="col-th-volumes"  >${d.volumes||'—'}</td>
+    <td class="col-th-remetente" style="font-size:12px">${d.nomeRem}</td>
+    <td class="col-th-cidrem"   style="font-size:12px">${d.munOrigem}</td>
+    <td class="col-th-ufrem"    >${d.ufOrigem}</td>
+    <td class="col-th-destinat" style="font-size:12px">${d.nomeDest}</td>
+    <td class="col-th-ciddest"  style="font-size:12px">${d.munDestino}</td>
+    <td class="col-th-ufdest"   >${d.ufDestino}</td>
+    <td class="col-th-nfes mono" style="font-size:11px">${d.nfes||'—'}</td>
+    <td class="col-th-vlfrete mono"><strong>${fmtR(d.vTPrest)}</strong></td>
+    <td class="col-th-recotado mono">${fmtR(d.valorCotado)}</td>
+    <td class="col-th-diverg"   >${divHtml}</td>
+    <td class="col-th-status"   ><span class="st-badge ${stCls[d.status]||'st-pend'}">${stMap[d.status]||d.status}</span></td>
+    <td class="col-th-acoes"    ><button class="btn btn-outline btn-sm" onclick="verDetalhe(${d.id})">Ver</button></td>
   `;
 }
 
@@ -803,6 +830,151 @@ function exportarConsolidadoPDF() {
   switchTab('consolidado', document.querySelectorAll('.tab-btn')[1]);
   setTimeout(()=>window.print(), 300);
 }
+
+// ── COLUNAS: DEFINIÇÃO ──
+const COLS_DEF = [
+  {id:'emissor',   label:'Emissor DACTe',  w:120},
+  {id:'ndacte',    label:'Nº DACTe',       w:80},
+  {id:'data',      label:'Data Emissão',   w:90},
+  {id:'vlnf',      label:'Vl. NF',         w:100},
+  {id:'peso',      label:'Peso (kg)',       w:80},
+  {id:'volumes',   label:'Volumes',        w:65},
+  {id:'remetente', label:'Remetente',      w:140},
+  {id:'cidrem',    label:'Cidade Rem.',    w:120},
+  {id:'ufrem',     label:'UF Rem.',        w:55},
+  {id:'destinat',  label:'Destinatário',   w:140},
+  {id:'ciddest',   label:'Cidade Dest.',   w:120},
+  {id:'ufdest',    label:'UF Dest.',       w:55},
+  {id:'nfes',      label:'NF-e(s)',        w:90},
+  {id:'vlfrete',   label:'Vl. Frete',      w:100},
+  {id:'recotado',  label:'Recotado',       w:100},
+  {id:'diverg',    label:'Divergência',    w:100},
+  {id:'status',    label:'Status',         w:90},
+  {id:'acoes',     label:'',              w:50},
+];
+const LS_VIS = 'tms_col_vis';
+const LS_WID = 'tms_col_wid';
+
+// Carrega preferências salvas
+function carregarPrefs() {
+  try {
+    const vis = JSON.parse(localStorage.getItem(LS_VIS) || '{}');
+    const wid = JSON.parse(localStorage.getItem(LS_WID) || '{}');
+    return {vis, wid};
+  } catch { return {vis:{}, wid:{}}; }
+}
+function salvarVis(vis) { try { localStorage.setItem(LS_VIS, JSON.stringify(vis)); } catch {} }
+function salvarWid(wid) { try { localStorage.setItem(LS_WID, JSON.stringify(wid)); } catch {} }
+
+// Aplica larguras e visibilidade na tabela
+function aplicarColunas() {
+  const {vis, wid} = carregarPrefs();
+  COLS_DEF.forEach(col => {
+    const largura = wid[col.id] || col.w;
+    const oculta  = vis[col.id] === false;
+    // Largura
+    document.querySelectorAll(`.col-th-${col.id}`).forEach(el => {
+      el.style.width    = largura + 'px';
+      el.style.minWidth = largura + 'px';
+      el.style.maxWidth = largura + 'px';
+    });
+    // Visibilidade
+    document.querySelectorAll(`.col-th-${col.id}`).forEach(el => {
+      el.style.display = oculta ? 'none' : '';
+    });
+  });
+}
+
+// Constrói o dropdown de colunas
+function construirDropdown() {
+  const {vis} = carregarPrefs();
+  const dd = document.getElementById('col-dropdown');
+  // Remove itens existentes (exceto header)
+  dd.querySelectorAll('.col-item').forEach(el=>el.remove());
+
+  COLS_DEF.filter(c=>c.label).forEach(col => {
+    const visivel = vis[col.id] !== false;
+    const item = document.createElement('label');
+    item.className = 'col-item';
+    item.innerHTML = `<input type="checkbox" ${visivel?'checked':''} data-col="${col.id}"> ${col.label}`;
+    item.querySelector('input').addEventListener('change', e => {
+      const v = carregarPrefs().vis;
+      v[col.id] = e.target.checked;
+      salvarVis(v);
+      aplicarColunas();
+    });
+    dd.appendChild(item);
+  });
+}
+
+function toggleColDropdown(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('col-dropdown');
+  construirDropdown();
+  dd.classList.toggle('open');
+}
+
+function resetarColunas() {
+  salvarVis({});
+  const w = {};
+  COLS_DEF.forEach(c=>{ w[c.id]=c.w; });
+  salvarWid(w);
+  construirDropdown();
+  aplicarColunas();
+}
+
+// Fecha dropdown ao clicar fora
+document.addEventListener('click', e => {
+  const dd = document.getElementById('col-dropdown');
+  if (dd && !dd.closest('.col-menu-wrap')?.contains(e.target)) dd.classList.remove('open');
+});
+
+// ── RESIZE DE COLUNAS ──
+let resizeState = null;
+
+function startResize(e, handle) {
+  e.preventDefault();
+  e.stopPropagation();
+  const th = handle.parentElement;
+  const colId = th.dataset.col;
+  resizeState = { colId, startX: e.clientX, startW: th.offsetWidth };
+  document.addEventListener('mousemove', onResize);
+  document.addEventListener('mouseup',   stopResize);
+  document.body.style.cursor = 'col-resize';
+  document.body.style.userSelect = 'none';
+}
+
+function onResize(e) {
+  if (!resizeState) return;
+  const diff = e.clientX - resizeState.startX;
+  const nova = Math.max(40, resizeState.startW + diff);
+  document.querySelectorAll(`.col-th-${resizeState.colId}`).forEach(el => {
+    el.style.width    = nova + 'px';
+    el.style.minWidth = nova + 'px';
+    el.style.maxWidth = nova + 'px';
+  });
+}
+
+function stopResize() {
+  if (!resizeState) return;
+  // Salva nova largura
+  const th = document.querySelector(`.tbl th.col-th-${resizeState.colId}`);
+  if (th) {
+    const wid = carregarPrefs().wid;
+    wid[resizeState.colId] = th.offsetWidth;
+    salvarWid(wid);
+  }
+  resizeState = null;
+  document.removeEventListener('mousemove', onResize);
+  document.removeEventListener('mouseup',   stopResize);
+  document.body.style.cursor = '';
+  document.body.style.userSelect = '';
+}
+
+// Inicializa ao carregar
+window.addEventListener('DOMContentLoaded', () => {
+  aplicarColunas();
+});
 
 function limpar() {
   dados=[];
