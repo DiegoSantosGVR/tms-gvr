@@ -97,6 +97,7 @@ main { flex:1; padding:28px 20px; max-width:1400px; margin:0 auto; width:100%; }
 .tp-jamef     { background:#E8F0FA; color:var(--blue); }
 .tp-braspress { background:#FFF0F2; color:var(--red); }
 .tp-outro     { background:var(--gray-100); color:var(--gray-600); }
+.tp-movvi     { background:#FFF8E7; color:#7c4a00; }
 .st-badge { display:inline-flex; align-items:center; padding:3px 8px; border-radius:20px; font-size:10px; font-weight:700; white-space:nowrap; }
 .st-ok   { background:var(--green-bg); color:var(--green); }
 .st-warn { background:var(--amber-bg); color:var(--amber); }
@@ -405,6 +406,7 @@ function parseCTe(xmlStr, filename) {
   let transportadora = nomeEmit || 'OUTRO';
   if (cnpjEmit.includes('20147617') || nomeEmit.includes('JAMEF'))     transportadora = 'JAMEF';
   if (cnpjEmit.includes('48740351') || nomeEmit.includes('BRASPRESS')) transportadora = 'BRASPRESS';
+  if (cnpjEmit.includes('23864838') || nomeEmit.includes('MOVVI'))     transportadora = 'MOVVI';
   const nomeEmitFull = doc.querySelector('emit xNome')?.textContent?.trim() || transportadora;
 
   // Identificação
@@ -518,8 +520,75 @@ async function iniciar(files) {
   atualizarKPIs();
 }
 
+// ── TABELA MOVVI (mesma do index.html) ──
+const LS_MOVVI_AUD = 'tms_movvi_tabela';
+const UFS_MOVVI = new Set(['SP','RJ','MG','PR','RS','ES','SC']);
+const TABELA_MOVVI_PAD = [
+  {cidade:'São Paulo',uf:'SP',pct:1.11,min:66.82},{cidade:'Rio de Janeiro',uf:'RJ',pct:2.89,min:99.89},
+  {cidade:'Angra dos Reis',uf:'RJ',pct:3.00,min:124.88},{cidade:'Rio de Janeiro INT',uf:'RJ',pct:3.00,min:124.88},
+  {cidade:'Belo Horizonte',uf:'MG',pct:2.89,min:99.89},{cidade:'Campinas',uf:'SP',pct:1.19,min:66.82},
+  {cidade:'Curitiba',uf:'PR',pct:2.40,min:99.89},{cidade:'Sao Jose dos Campos',uf:'SP',pct:2.81,min:116.73},
+  {cidade:'Indaiatuba',uf:'SP',pct:1.19,min:66.82},{cidade:'Cotia',uf:'SP',pct:1.19,min:66.82},
+  {cidade:'Itatiba',uf:'SP',pct:2.81,min:116.73},{cidade:'Mogi das Cruzes',uf:'SP',pct:1.19,min:66.82},
+  {cidade:'Caxambu',uf:'MG',pct:3.90,min:162.33},{cidade:'Ribeirao Preto',uf:'SP',pct:2.47,min:102.72},
+  {cidade:'Porto Alegre',uf:'RS',pct:2.72,min:112.93},{cidade:'Nova Odessa',uf:'SP',pct:1.19,min:66.82},
+  {cidade:'Mairipora',uf:'SP',pct:1.19,min:66.82},{cidade:'Armacao dos Buzios',uf:'RJ',pct:3.00,min:124.88},
+  {cidade:'Jacutinga',uf:'MG',pct:3.90,min:162.33},{cidade:'Sorocaba',uf:'SP',pct:2.09,min:86.86},
+  {cidade:'São José do Rio Preto',uf:'SP',pct:2.47,min:102.72},{cidade:'Bauru',uf:'SP',pct:2.81,min:116.73},
+  {cidade:'Uberlandia',uf:'MG',pct:3.00,min:124.88},{cidade:'Pouso Alegre',uf:'MG',pct:3.00,min:116.73},
+  {cidade:'Extrema',uf:'MG',pct:3.00,min:116.73},{cidade:'Vitória',uf:'ES',pct:2.72,min:112.93},
+  {cidade:'Londrina',uf:'PR',pct:2.64,min:109.88},{cidade:'Maringa',uf:'PR',pct:2.64,min:109.88},
+  {cidade:'Florianopolis',uf:'SC',pct:2.56,min:106.41},{cidade:'Itajai',uf:'SC',pct:2.56,min:106.41},
+  {cidade:'Blumenau',uf:'SC',pct:2.56,min:106.41},{cidade:'Joinville',uf:'SC',pct:2.56,min:106.41},
+];
+function getTabelaMovviAud() { try { const s=localStorage.getItem(LS_MOVVI_AUD); return s?JSON.parse(s):TABELA_MOVVI_PAD; } catch { return TABELA_MOVVI_PAD; } }
+function normCidadeAud(s) { return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9\s]/g,'').trim(); }
+
+function cotarMovvi(cte) {
+  const tabela = getTabelaMovviAud();
+  const nOrig  = normCidadeAud(cte.munOrigem  || '');
+  const nDest  = normCidadeAud(cte.munDestino || '');
+  const ufOrig = cte.ufOrigem  || '';
+  const ufDest = cte.ufDestino || '';
+
+  if (!UFS_MOVVI.has(ufOrig) || !UFS_MOVVI.has(ufDest)) return null;
+
+  const reg = tabela.find(r => normCidadeAud(r.cidade) === nDest)
+           || tabela.find(r => normCidadeAud(r.cidade) === nOrig);
+  if (!reg) return null;
+
+  const porPct    = parseFloat((cte.valorMercadoria * reg.pct / 100).toFixed(2));
+  const valorFinal = Math.max(porPct, reg.min);
+  return {
+    transportadora:'MOVVI', numeroCotacao:'—',
+    valorFrete:valorFinal, valorTotal:valorFinal, valorImpostos:null,
+    prazoEntrega:null, pesoCobrado:null,
+    regraAplicada: valorFinal===porPct ? `${reg.pct}% × NF` : `Mínimo R$ ${reg.min.toFixed(2)}`,
+  };
+}
+
+
 // ── RECOTAR ──
 async function recotar(cte) {
+  // MOVVI — recotação pela tabela interna
+  if (cte.transportadora === 'MOVVI') {
+    const res = cotarMovvi(cte);
+    if (res) {
+      cte.valorCotado = res.valorTotal;
+      cte.divR = parseFloat((cte.vTPrest - res.valorTotal).toFixed(2));
+      cte.divP = res.valorTotal > 0
+        ? parseFloat(((cte.vTPrest - res.valorTotal)/res.valorTotal*100).toFixed(2)) : 0;
+      const p = Math.abs(cte.divP);
+      cte.status = p<=10?'ok': p<=20?'warn':'crit';
+    } else {
+      cte.status  = 'erro';
+      cte.erroMsg = 'Cidade não cadastrada na tabela Movvi';
+    }
+    atualizarLinha(cte);
+    atualizarKPIs();
+    return;
+  }
+
   if (cte.transportadora==='BRASPRESS' && !bpJsessionid) {
     cte.status='sem-sessao'; cte.erroMsg='Ative a sessão BRASPRESS acima';
     atualizarLinha(cte); return;
@@ -668,7 +737,7 @@ function atualizarLinha(cte) {
   if(tr) tr.innerHTML=htmlLinha(cte);
 }
 function htmlLinha(d) {
-  const tpCls={JAMEF:'tp-jamef',BRASPRESS:'tp-braspress',OUTRO:'tp-outro'}[d.transportadora]||'tp-outro';
+  const tpCls={JAMEF:'tp-jamef',BRASPRESS:'tp-braspress',MOVVI:'tp-movvi',OUTRO:'tp-outro'}[d.transportadora]||'tp-outro';
   const stMap={ok:'✅ OK',warn:'⚠️ Alerta',crit:'🔴 Crítico',cotando:'⏳ Cotando…',erro:'❌ Erro','sem-sessao':'🔑 Sessão BP'};
   const stCls={ok:'st-ok',warn:'st-warn',crit:'st-crit',cotando:'st-pend',erro:'st-warn','sem-sessao':'st-warn'};
   let divHtml='—';
