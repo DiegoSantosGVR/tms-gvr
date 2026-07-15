@@ -417,16 +417,34 @@ async function recotar(cte) {
   }
   try {
     const pesoReal   = cte.pesoDeclarado || cte.pesoCubado || 1;
-    const pesoCubado = cte.metrosCubicos>0 ? parseFloat((cte.metrosCubicos*300).toFixed(2)) : cte.pesoCubado||pesoReal;
-    const metragem   = cte.metrosCubicos>0 ? cte.metrosCubicos : parseFloat((pesoCubado/300).toFixed(4));
+    const pesoCubado = cte.metrosCubicos > 0
+      ? parseFloat((cte.metrosCubicos * 300).toFixed(2))
+      : (cte.pesoCubado || pesoReal);
+
+    // Metragem cúbica total — usa o campo do XML se disponível,
+    // senão deriva do peso cubado (÷300)
+    const metragem = cte.metrosCubicos > 0
+      ? cte.metrosCubicos
+      : parseFloat((pesoCubado / 300).toFixed(4));
+
+    const qtd = cte.volumes || 1;
+
+    // Deriva dimensões de uma caixa cúbica equivalente a partir da metragem total
+    // lado = (metragem_total / qtd_volumes) ^ (1/3)
+    const ladoM = parseFloat(Math.cbrt(metragem / qtd).toFixed(3)) || 0.1;
+
+    console.log(`[AUDITORIA RECOTAR] ${cte.nCT} pesoReal=${pesoReal} pesoCubado=${pesoCubado} metragem=${metragem} qtd=${qtd} lado=${ladoM}`);
 
     const campos = {
-      cepOrigem:cte.cepOrigem, cepDestino:cte.cepDestino,
-      cnpjDestinatario:cte.cnpjDest||'66934555001514',
-      pesoReal, pesoCubado, pesoCobrado:Math.max(pesoReal,pesoCubado),
-      qtdVolumes:cte.volumes||1, valorMercadoria:cte.valorMercadoria||1,
-      comprimento:1, largura:1, altura:1, metragemCubica:metragem,
-      embalagem:'CX', tipoFrete:'1', modal:'R',
+      cepOrigem: cte.cepOrigem, cepDestino: cte.cepDestino,
+      cnpjDestinatario: cte.cnpjDest || '66934555001514',
+      pesoReal, pesoCubado,
+      pesoCobrado: Math.max(pesoReal, pesoCubado),
+      qtdVolumes: qtd,
+      valorMercadoria: cte.valorMercadoria || 1,
+      comprimento: ladoM, largura: ladoM, altura: ladoM,
+      metragemCubica: metragem,
+      embalagem: 'CX', tipoFrete: '1', modal: 'R',
     };
 
     let body = {};
