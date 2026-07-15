@@ -4,110 +4,131 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TMS GVR — Auditoria de CT-e</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --red: #C8102E; --blue: #1B3F6E; --blue-light: #eef3fa;
-    --gray-50: #f8f8f7; --gray-100: #efefed; --gray-200: #dedcda;
-    --gray-400: #9e9c99; --gray-600: #5c5a57; --gray-800: #2c2b29;
-    --green: #1a7f4b; --green-bg: #edf7f2;
-    --amber: #b45309; --amber-bg: #fffbeb;
-    --shadow-md: 0 4px 16px rgba(0,0,0,.10);
-    --radius: 10px; --font: 'Segoe UI', system-ui, sans-serif;
-  }
-  body { font-family: var(--font); background: var(--gray-50); color: var(--gray-800); min-height: 100vh; display: flex; flex-direction: column; }
-  header { background: var(--blue); padding: 0 32px; height: 56px; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--shadow-md); }
-  .logo { display: flex; align-items: center; gap: 14px; }
-  .logo-gvr { font-size: 18px; font-weight: 800; color: #fff; }
-  .logo-sep { width: 1px; height: 22px; background: rgba(255,255,255,.2); }
-  .logo-sub { font-size: 12px; color: rgba(255,255,255,.6); }
-  .nav-link { color: rgba(255,255,255,.75); font-size: 13px; text-decoration: none; padding: 6px 14px; border-radius: 6px; border: 1px solid rgba(255,255,255,.2); transition: all .15s; }
-  .nav-link:hover { background: rgba(255,255,255,.1); color: #fff; }
-  main { flex: 1; padding: 28px 20px; max-width: 1100px; margin: 0 auto; width: 100%; }
-  .card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-md); border: 1px solid var(--gray-100); overflow: hidden; margin-bottom: 20px; }
-  .card-header { padding: 16px 22px; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--gray-100); }
-  .card-header.blue { background: var(--blue); color: #fff; }
-  .card-header.gray { background: var(--gray-50); color: var(--gray-800); }
-  .card-body { padding: 22px; }
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; font-family: var(--font); transition: all .18s; }
-  .btn-primary { background: var(--blue); color: #fff; }
-  .btn-primary:hover { background: #142f54; }
-  .btn-outline { background: #fff; color: var(--blue); border: 1.5px solid var(--blue); }
-  .btn-outline:hover { background: var(--blue-light); }
-  .btn-sm { padding: 6px 12px; font-size: 12px; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --red:#C8102E; --red-bg:#fff0f2;
+  --blue:#1B3F6E; --blue-light:#eef3fa;
+  --gray-50:#f8f8f7; --gray-100:#efefed; --gray-200:#dedcda;
+  --gray-400:#9e9c99; --gray-600:#5c5a57; --gray-800:#2c2b29;
+  --green:#1a7f4b; --green-bg:#edf7f2;
+  --amber:#b45309; --amber-bg:#fffbeb;
+  --shadow-md:0 4px 16px rgba(0,0,0,.10);
+  --radius:10px; --font:'Segoe UI',system-ui,sans-serif;
+}
+body { font-family:var(--font); background:var(--gray-50); color:var(--gray-800); min-height:100vh; display:flex; flex-direction:column; }
+header { background:var(--blue); padding:0 32px; height:56px; display:flex; align-items:center; justify-content:space-between; box-shadow:var(--shadow-md); }
+.logo { display:flex; align-items:center; gap:14px; }
+.logo-gvr { font-size:18px; font-weight:800; color:#fff; }
+.logo-sep { width:1px; height:22px; background:rgba(255,255,255,.2); }
+.logo-sub { font-size:12px; color:rgba(255,255,255,.6); }
+.nav-link { color:rgba(255,255,255,.75); font-size:13px; text-decoration:none; padding:6px 14px; border-radius:6px; border:1px solid rgba(255,255,255,.2); }
+.nav-link:hover { background:rgba(255,255,255,.1); color:#fff; }
+main { flex:1; padding:28px 20px; max-width:1200px; margin:0 auto; width:100%; }
+.card { background:#fff; border-radius:var(--radius); box-shadow:var(--shadow-md); border:1px solid var(--gray-100); overflow:hidden; margin-bottom:20px; }
+.card-header { padding:16px 22px; font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:space-between; gap:10px; border-bottom:1px solid var(--gray-100); }
+.card-header.blue { background:var(--blue); color:#fff; }
+.card-header.gray { background:var(--gray-50); color:var(--gray-800); }
+.card-body { padding:22px; }
+.btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:10px 20px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; border:none; font-family:var(--font); transition:all .18s; }
+.btn-primary { background:var(--blue); color:#fff; }
+.btn-primary:hover { background:#142f54; }
+.btn-outline { background:#fff; color:var(--blue); border:1.5px solid var(--blue); }
+.btn-outline:hover { background:var(--blue-light); }
+.btn-amber { background:var(--amber); color:#fff; }
+.btn-sm { padding:6px 12px; font-size:12px; }
 
-  /* DROP ZONE */
-  .drop-zone { border: 2px dashed var(--gray-200); border-radius: var(--radius); padding: 48px 24px; text-align: center; cursor: pointer; transition: all .2s; background: var(--gray-50); }
-  .drop-zone:hover, .drop-zone.drag-over { border-color: var(--blue); background: var(--blue-light); }
-  .drop-zone .icon { font-size: 40px; margin-bottom: 12px; }
-  .drop-zone h3 { font-size: 15px; font-weight: 700; color: var(--gray-800); margin-bottom: 6px; }
-  .drop-zone p { font-size: 13px; color: var(--gray-400); }
+/* TABS */
+.tabs { display:flex; border-bottom:2px solid var(--gray-100); margin-bottom:0; }
+.tab-btn { padding:12px 22px; font-size:13px; font-weight:600; color:var(--gray-400); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; transition:all .15s; background:none; border-top:none; border-left:none; border-right:none; font-family:var(--font); }
+.tab-btn.active { color:var(--blue); border-bottom-color:var(--blue); }
+.tab-pane { display:none; }
+.tab-pane.active { display:block; }
 
-  /* RESUMO */
-  .resumo-bar { display: flex; gap: 20px; flex-wrap: wrap; padding: 18px 22px; background: var(--blue); color: #fff; }
-  .resumo-item .rv { font-size: 22px; font-weight: 800; }
-  .resumo-item .rl { font-size: 11px; color: rgba(255,255,255,.6); text-transform: uppercase; letter-spacing: .4px; margin-top: 2px; }
-  .rv.ok   { color: #6ee7b7; }
-  .rv.warn { color: #fcd34d; }
-  .rv.crit { color: #fca5a5; }
-  .sep { width: 1px; background: rgba(255,255,255,.15); align-self: stretch; margin: 0 4px; }
+/* DROP */
+.drop-zone { border:2px dashed var(--gray-200); border-radius:var(--radius); padding:40px 24px; text-align:center; cursor:pointer; transition:all .2s; background:var(--gray-50); }
+.drop-zone:hover,.drop-zone.drag-over { border-color:var(--blue); background:var(--blue-light); }
+.drop-zone .icon { font-size:36px; margin-bottom:10px; }
+.drop-zone h3 { font-size:14px; font-weight:700; margin-bottom:4px; }
+.drop-zone p { font-size:12px; color:var(--gray-400); }
 
-  /* TABELA */
-  .audit-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .audit-table th { background: var(--gray-50); padding: 10px 12px; text-align: left; font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: .4px; border-bottom: 2px solid var(--gray-100); white-space: nowrap; }
-  .audit-table td { padding: 11px 12px; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
-  .audit-table tr:last-child td { border-bottom: none; }
-  .audit-table tr:hover td { background: var(--gray-50); }
+/* RESUMO BAR */
+.kpi-bar { display:flex; gap:20px; flex-wrap:wrap; padding:16px 22px; background:var(--blue); color:#fff; }
+.kpi-item .kv { font-size:22px; font-weight:800; }
+.kpi-item .kl { font-size:11px; color:rgba(255,255,255,.6); text-transform:uppercase; letter-spacing:.4px; margin-top:2px; }
+.kv.ok { color:#6ee7b7; } .kv.warn { color:#fcd34d; } .kv.crit { color:#fca5a5; }
+.ksep { width:1px; background:rgba(255,255,255,.15); align-self:stretch; }
 
-  .tp-badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
-  .tp-jamef     { background: #E8F0FA; color: var(--blue); }
-  .tp-braspress { background: #FFF0F2; color: var(--red); }
-  .tp-outro     { background: var(--gray-100); color: var(--gray-600); }
+/* SESSION BOX */
+.session-box { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:12px 14px; border:1.5px solid var(--gray-200); border-radius:10px; margin-bottom:14px; background:var(--gray-50); }
+.session-box input { flex:1; min-width:200px; border:1.5px solid var(--gray-200); border-radius:7px; padding:8px 11px; font-size:12px; font-family:monospace; }
+.session-box.active { border-color:var(--green); background:var(--green-bg); }
 
-  .st-badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; white-space: nowrap; }
-  .st-ok   { background: var(--green-bg); color: var(--green); }
-  .st-warn { background: var(--amber-bg); color: var(--amber); }
-  .st-crit { background: #fff0f2; color: var(--red); }
-  .st-pend { background: var(--gray-100); color: var(--gray-400); }
+/* TABELAS */
+.tbl { width:100%; border-collapse:collapse; font-size:13px; }
+.tbl th { background:var(--gray-50); padding:9px 12px; text-align:left; font-size:11px; font-weight:700; color:var(--gray-400); text-transform:uppercase; letter-spacing:.4px; border-bottom:2px solid var(--gray-100); white-space:nowrap; }
+.tbl td { padding:10px 12px; border-bottom:1px solid var(--gray-100); vertical-align:middle; }
+.tbl tr:last-child td { border-bottom:none; }
+.tbl tr:hover td { background:var(--gray-50); }
+.mono { font-family:monospace; font-size:12px; }
 
-  .div-pos { color: var(--red); font-weight: 700; }
-  .div-neg { color: var(--green); font-weight: 700; }
-  .mono { font-family: monospace; }
+/* BADGES */
+.tp-badge { display:inline-flex; align-items:center; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; }
+.tp-jamef { background:#E8F0FA; color:var(--blue); }
+.tp-braspress { background:#FFF0F2; color:var(--red); }
+.tp-outro { background:var(--gray-100); color:var(--gray-600); }
+.st-badge { display:inline-flex; align-items:center; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; white-space:nowrap; }
+.st-ok { background:var(--green-bg); color:var(--green); }
+.st-warn { background:var(--amber-bg); color:var(--amber); }
+.st-crit { background:var(--red-bg); color:var(--red); }
+.st-pend { background:var(--gray-100); color:var(--gray-400); }
 
-  /* PROGRESS */
-  .progress-wrap { margin-top: 14px; display: none; }
-  .progress-bar { height: 6px; background: var(--gray-100); border-radius: 3px; overflow: hidden; }
-  .progress-fill { height: 100%; background: var(--blue); border-radius: 3px; transition: width .3s; }
-  .progress-label { font-size: 12px; color: var(--gray-400); margin-top: 6px; }
+.div-pos { color:var(--red); font-weight:700; }
+.div-neg { color:var(--green); font-weight:700; }
 
-  /* ALERT */
-  .alert { border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-top: 12px; line-height: 1.5; }
-  .alert-info  { background: var(--blue-light); border: 1px solid #bfdbfe; color: var(--blue); display: block; }
-  .alert-error { background: #fff0f2; border: 1px solid #ffc1cb; color: #9e0c23; display: none; }
+/* ALERTA NÃO CONSOLIDADO */
+.alert-banner { background:var(--amber-bg); border:2px solid var(--amber); border-radius:var(--radius); padding:16px 20px; margin-bottom:20px; display:none; }
+.alert-banner h3 { color:var(--amber); font-size:14px; font-weight:700; margin-bottom:4px; }
+.alert-banner p { font-size:13px; color:var(--gray-600); }
+.grupo-card { border:1px solid var(--amber); border-radius:8px; margin-bottom:12px; overflow:hidden; }
+.grupo-header { background:var(--amber-bg); padding:12px 16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
+.grupo-title { font-size:13px; font-weight:700; color:var(--amber); }
+.grupo-meta { font-size:12px; color:var(--gray-600); }
+.grupo-total { font-size:13px; font-weight:700; color:var(--red); }
 
-  /* LOADING */
-  #overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,.8); backdrop-filter: blur(2px); z-index: 100; align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
-  .spin { width: 42px; height: 42px; border: 4px solid var(--gray-100); border-top-color: var(--blue); border-radius: 50%; animation: spin .8s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  #overlay p { font-size: 14px; color: var(--gray-600); font-weight: 500; }
+/* PROGRESS */
+.prog-wrap { margin-top:12px; display:none; }
+.prog-bar { height:5px; background:var(--gray-100); border-radius:3px; overflow:hidden; }
+.prog-fill { height:100%; background:var(--blue); border-radius:3px; transition:width .3s; }
+.prog-label { font-size:11px; color:var(--gray-400); margin-top:4px; }
 
-  /* MODAL */
-  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
-  .modal-bg.open { display: flex; }
-  .modal { background: #fff; border-radius: var(--radius); box-shadow: 0 20px 60px rgba(0,0,0,.2); width: 100%; max-width: 580px; max-height: 90vh; overflow-y: auto; }
-  .modal-hdr { padding: 18px 22px; font-size: 15px; font-weight: 700; border-bottom: 1px solid var(--gray-100); display: flex; justify-content: space-between; align-items: center; }
-  .modal-bdy { padding: 22px; }
-  .modal-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--gray-400); line-height: 1; }
-  .drow { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--gray-100); font-size: 13px; gap: 16px; }
-  .drow:last-child { border: none; }
-  .dl { color: var(--gray-600); flex-shrink: 0; }
-  .dv { font-weight: 600; text-align: right; }
-  .sec-label { margin: 14px 0 4px; font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: .5px; }
-  .comp-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
-  .comp-tbl th { background: var(--gray-50); padding: 6px 10px; text-align: left; font-size: 11px; color: var(--gray-400); font-weight: 700; }
-  .comp-tbl td { padding: 7px 10px; border-bottom: 1px solid var(--gray-100); }
+/* ALERT */
+.info-box { background:var(--blue-light); border:1px solid #bfdbfe; border-radius:8px; padding:10px 14px; font-size:12px; color:var(--blue); margin-top:12px; line-height:1.5; }
 
-  @media (max-width: 768px) { main { padding: 14px; } .audit-table { font-size: 12px; } }
+/* LOADING */
+#overlay { display:none; position:fixed; inset:0; background:rgba(255,255,255,.85); backdrop-filter:blur(2px); z-index:100; align-items:center; justify-content:center; flex-direction:column; gap:14px; }
+.spin { width:40px; height:40px; border:4px solid var(--gray-100); border-top-color:var(--blue); border-radius:50%; animation:spin .8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+#overlay p { font-size:14px; color:var(--gray-600); font-weight:500; }
+
+/* MODAL */
+.modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:200; align-items:center; justify-content:center; padding:20px; }
+.modal-bg.open { display:flex; }
+.modal { background:#fff; border-radius:var(--radius); box-shadow:0 20px 60px rgba(0,0,0,.2); width:100%; max-width:600px; max-height:90vh; overflow-y:auto; }
+.modal-hdr { padding:16px 22px; font-size:14px; font-weight:700; border-bottom:1px solid var(--gray-100); display:flex; justify-content:space-between; align-items:center; }
+.modal-bdy { padding:22px; }
+.modal-close { background:none; border:none; font-size:20px; cursor:pointer; color:var(--gray-400); }
+.drow { display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--gray-100); font-size:13px; gap:12px; }
+.drow:last-child { border:none; }
+.dl { color:var(--gray-600); flex-shrink:0; }
+.dv { font-weight:600; text-align:right; }
+.sec-label-m { margin:12px 0 4px; font-size:11px; font-weight:700; color:var(--gray-400); text-transform:uppercase; letter-spacing:.5px; }
+.comp-tbl { width:100%; border-collapse:collapse; font-size:12px; }
+.comp-tbl th { background:var(--gray-50); padding:6px 10px; text-align:left; font-size:11px; color:var(--gray-400); font-weight:700; }
+.comp-tbl td { padding:6px 10px; border-bottom:1px solid var(--gray-100); }
+
+@media(max-width:768px) { main { padding:14px; } .tbl { font-size:12px; } }
 </style>
 </head>
 <body>
@@ -138,118 +159,144 @@
 
 <main>
 
+  <!-- UPLOAD -->
   <div class="card">
-    <div class="card-header blue">🔍 Importar CT-es para auditoria</div>
+    <div class="card-header blue">📂 Importar CT-es para auditoria</div>
     <div class="card-body">
+
+      <!-- SESSÃO BRASPRESS -->
+      <div class="session-box" id="session-box">
+        <span style="font-size:12px;font-weight:700;color:var(--gray-600);white-space:nowrap">BRASPRESS · JSESSIONID</span>
+        <input type="text" id="bp-jsessionid" placeholder="Cole o JSESSIONID para recotação automática da BRASPRESS (F12 → Application → Cookies → blue.braspress.com)">
+        <button class="btn btn-outline btn-sm" onclick="ativarSessao()">Ativar</button>
+        <span id="bp-status" style="font-size:12px;font-weight:600;color:var(--gray-400);white-space:nowrap">⬤ Sem sessão</span>
+      </div>
+
       <div class="drop-zone" id="drop-zone"
            onclick="document.getElementById('f-xml').click()"
-           ondragover="onDragOver(event)"
-           ondragleave="onDragLeave()"
-           ondrop="onDrop(event)">
+           ondragover="onDragOver(event)" ondragleave="onDragLeave()" ondrop="onDrop(event)">
         <div class="icon">📄</div>
         <h3>Arraste os XMLs dos CT-es aqui</h3>
         <p>Ou clique para selecionar — JAMEF e BRASPRESS, múltiplos arquivos</p>
-        <input type="file" id="f-xml" multiple accept=".xml" style="display:none" onchange="iniciarProcessamento(this.files)">
+        <input type="file" id="f-xml" multiple accept=".xml" style="display:none" onchange="iniciar(this.files)">
       </div>
 
-      <div class="progress-wrap" id="prog-wrap">
-        <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
-        <div class="progress-label" id="prog-label"></div>
+      <div class="prog-wrap" id="prog-wrap">
+        <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+        <div class="prog-label" id="prog-label"></div>
       </div>
 
-      <!-- SESSÃO BRASPRESS -->
-      <div id="bp-session-box" style="margin-top:16px; padding:14px; border:1.5px solid var(--gray-200); border-radius:10px; display:flex; align-items:center; gap:12px; flex-wrap:wrap">
-        <div style="flex:1; min-width:200px">
-          <div style="font-size:12px; font-weight:700; color:var(--gray-600); margin-bottom:4px">SESSÃO BRASPRESS (para recotação automática)</div>
-          <input type="text" id="bp-jsessionid" placeholder="Cole o JSESSIONID da BRASPRESS aqui"
-            style="width:100%; border:1.5px solid var(--gray-200); border-radius:7px; padding:8px 11px; font-size:13px; font-family:monospace">
-        </div>
-        <button class="btn btn-outline" onclick="ativarSessaoBP()" style="white-space:nowrap; flex-shrink:0">
-          Ativar sessão BRASPRESS
-        </button>
-        <div id="bp-status" style="font-size:12px; font-weight:600; color:var(--gray-400)">⬤ Sem sessão</div>
+      <div class="info-box">
+        💡 O sistema lê o XML, recota via API e compara com o valor cobrado. <strong>Tolerância: 10%</strong> — OK ≤10% · Alerta 10–20% · Crítico >20%. Também detecta fretes que deveriam ter sido consolidados.
       </div>
-
-      <div class="alert alert-info">
-        💡 O sistema lê o XML, recota via API e compara com o valor cobrado.
-        <strong>Tolerância: 10%</strong> — OK ≤10% · Alerta 10–20% · Crítico &gt;20%.
-        Com sessão BRASPRESS ativa, CT-es são recotados automaticamente.
-      </div>
-      <div class="alert alert-error" id="alerta"></div>
     </div>
   </div>
 
+  <!-- RESULTADOS -->
   <div id="sec-resultado" style="display:none">
+
+    <!-- KPI BAR -->
     <div class="card">
-      <div class="resumo-bar" id="resumo-bar">
-        <div class="resumo-item"><div class="rv" id="r-total">0</div><div class="rl">CT-es auditados</div></div>
-        <div class="sep"></div>
-        <div class="resumo-item"><div class="rv ok" id="r-ok">0</div><div class="rl">✅ OK (≤10%)</div></div>
-        <div class="resumo-item"><div class="rv warn" id="r-warn">0</div><div class="rl">⚠️ Alerta (10–20%)</div></div>
-        <div class="resumo-item"><div class="rv crit" id="r-crit">0</div><div class="rl">🔴 Crítico (&gt;20%)</div></div>
-        <div class="resumo-item"><div class="rv" id="r-pend">0</div><div class="rl">⏳ Pendente</div></div>
-        <div class="sep"></div>
-        <div class="resumo-item"><div class="rv" id="r-cobrado">—</div><div class="rl">Total cobrado</div></div>
-        <div class="resumo-item"><div class="rv" id="r-cotado">—</div><div class="rl">Total recotado</div></div>
-        <div class="resumo-item"><div class="rv" id="r-div">—</div><div class="rl">Divergência total</div></div>
+      <div class="kpi-bar">
+        <div class="kpi-item"><div class="kv" id="k-total">0</div><div class="kl">CT-es</div></div>
+        <div class="ksep"></div>
+        <div class="kpi-item"><div class="kv ok" id="k-ok">0</div><div class="kl">✅ OK ≤10%</div></div>
+        <div class="kpi-item"><div class="kv warn" id="k-warn">0</div><div class="kl">⚠️ Alerta 10–20%</div></div>
+        <div class="kpi-item"><div class="kv crit" id="k-crit">0</div><div class="kl">🔴 Crítico >20%</div></div>
+        <div class="kpi-item"><div class="kv" id="k-pend">0</div><div class="kl">⏳ Pendente</div></div>
+        <div class="ksep"></div>
+        <div class="kpi-item"><div class="kv" id="k-cobrado">—</div><div class="kl">Total cobrado</div></div>
+        <div class="kpi-item"><div class="kv" id="k-cotado">—</div><div class="kl">Total recotado</div></div>
+        <div class="kpi-item"><div class="kv" id="k-div">—</div><div class="kl">Divergência</div></div>
+        <div class="ksep"></div>
+        <div class="kpi-item"><div class="kv crit" id="k-nconsolid">0</div><div class="kl">⚠️ Não consolidados</div></div>
       </div>
-      <div class="card-header gray">
-        <span>Resultados por CT-e</span>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-outline btn-sm" onclick="exportar()">⬇ Exportar CSV</button>
+
+      <!-- ABAS -->
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('auditoria',this)">📊 Auditoria de cobranças</button>
+        <button class="tab-btn" onclick="switchTab('consolidado',this)">⚠️ Frete não consolidado</button>
+      </div>
+
+      <!-- ABA AUDITORIA -->
+      <div class="tab-pane active" id="tab-auditoria">
+        <div style="display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;border-bottom:1px solid var(--gray-100)">
+          <button class="btn btn-outline btn-sm" onclick="exportarAuditoriaXLSX()">⬇ Exportar Excel</button>
           <button class="btn btn-outline btn-sm" onclick="limpar()">🗑 Limpar</button>
         </div>
+        <div style="overflow-x:auto">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>Transportadora</th>
+                <th>Nº CT-e</th>
+                <th>Data</th>
+                <th>Rota</th>
+                <th>Peso cob.</th>
+                <th>Valor NF</th>
+                <th>Cobrado</th>
+                <th>Recotado</th>
+                <th>Divergência</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tbody-audit"></tbody>
+          </table>
+        </div>
       </div>
-      <div style="overflow-x:auto">
-        <table class="audit-table">
-          <thead>
-            <tr>
-              <th>Transportadora</th>
-              <th>Nº CT-e</th>
-              <th>Data</th>
-              <th>Rota</th>
-              <th>Peso cob.</th>
-              <th>Valor NF</th>
-              <th>Cobrado</th>
-              <th>Recotado</th>
-              <th>Divergência</th>
-              <th>Status</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="tbody"></tbody>
-        </table>
+
+      <!-- ABA NÃO CONSOLIDADO -->
+      <div class="tab-pane" id="tab-consolidado">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--gray-100)">
+          <span style="font-size:13px;color:var(--gray-600)">CT-es do mesmo remetente, mesmo destinatário, mesma data e mesma transportadora que deveriam ter sido consolidados.</span>
+          <div style="display:flex;gap:8px;flex-shrink:0">
+            <button class="btn btn-amber btn-sm" onclick="exportarConsolidadoXLSX()">⬇ Exportar Excel</button>
+          </div>
+        </div>
+        <div id="grupos-container" style="padding:16px">
+          <div id="sem-alertas" style="text-align:center;padding:32px;color:var(--gray-400);font-size:13px">
+            Nenhum frete não consolidado detectado ainda.<br>Importe os CT-es para análise.
+          </div>
+        </div>
       </div>
     </div>
-  </div>
 
+  </div>
 </main>
 
 <script>
 const PROXY = window.location.origin;
+const TOLERANCIA = 0.10;
 let dados = [];
 let bpJsessionid = null;
 
-function ativarSessaoBP() {
-  const val = document.getElementById('bp-jsessionid').value.trim();
-  if (!val) {
-    alert('Cole o JSESSIONID da BRASPRESS primeiro.\n\nF12 → Application → Cookies → blue.braspress.com → JSESSIONID');
-    return;
-  }
-  bpJsessionid = val;
-  document.getElementById('bp-status').textContent = '✅ Sessão ativa';
-  document.getElementById('bp-status').style.color = 'var(--green)';
-  document.getElementById('bp-session-box').style.borderColor = 'var(--green)';
-  document.getElementById('bp-session-box').style.background = 'var(--green-bg)';
+// ── TABS ──
+function switchTab(id, el) {
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+}
 
-  // Recota CT-es BRASPRESS pendentes
-  const pendentes = dados.filter(d => d.transportadora === 'BRASPRESS' && d.status === 'sem-sessao');
+// ── SESSÃO BRASPRESS ──
+function ativarSessao() {
+  const val = document.getElementById('bp-jsessionid').value.trim();
+  if (!val) { alert('Cole o JSESSIONID da BRASPRESS.\n\nF12 → Application → Cookies → blue.braspress.com → JSESSIONID'); return; }
+  bpJsessionid = val;
+  const box = document.getElementById('session-box');
+  box.classList.add('active');
+  document.getElementById('bp-status').textContent = '✅ Ativo';
+  document.getElementById('bp-status').style.color = 'var(--green)';
+
+  // Recota pendentes
+  const pendentes = dados.filter(d=>d.transportadora==='BRASPRESS' && d.status==='sem-sessao');
   if (pendentes.length > 0) {
-    document.getElementById('overlay').style.display = 'flex';
-    document.getElementById('overlay-msg').textContent = `Recotando ${pendentes.length} CT-e(s) BRASPRESS...`;
-    Promise.all(pendentes.map(d => recotar(d))).then(() => {
-      document.getElementById('overlay').style.display = 'none';
-      atualizarResumo();
+    document.getElementById('overlay').style.display='flex';
+    document.getElementById('overlay-msg').textContent=`Recotando ${pendentes.length} CT-e(s) BRASPRESS...`;
+    Promise.all(pendentes.map(d=>recotar(d))).then(()=>{
+      document.getElementById('overlay').style.display='none';
+      atualizarKPIs();
     });
   }
 }
@@ -257,25 +304,25 @@ function ativarSessaoBP() {
 // ── DRAG & DROP ──
 function onDragOver(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); }
 function onDragLeave()  { document.getElementById('drop-zone').classList.remove('drag-over'); }
-function onDrop(e)      { e.preventDefault(); onDragLeave(); iniciarProcessamento(e.dataTransfer.files); }
+function onDrop(e)      { e.preventDefault(); onDragLeave(); iniciar(e.dataTransfer.files); }
 
 // ── PARSE XML ──
 function parseCTe(xmlStr, filename) {
   const doc = new DOMParser().parseFromString(xmlStr, 'application/xml');
-  const get     = tag => doc.getElementsByTagName(tag)[0]?.textContent?.trim() || '';
-  const getAttr = (tag, attr) => doc.getElementsByTagName(tag)[0]?.getAttribute(attr) || '';
+  const get = tag => doc.getElementsByTagName(tag)[0]?.textContent?.trim() || '';
 
-  // Identifica transportadora pelo CNPJ do emitente
-  const cnpjEmit  = doc.querySelector('emit CNPJ')?.textContent || '';
-  const nomeEmit  = doc.querySelector('emit xNome')?.textContent?.toUpperCase() || '';
+  // Transportadora
+  const cnpjEmit = doc.querySelector('emit CNPJ')?.textContent || '';
+  const nomeEmit = doc.querySelector('emit xNome')?.textContent?.toUpperCase() || '';
   let transportadora = 'OUTRO';
   if (cnpjEmit.includes('20147617') || nomeEmit.includes('JAMEF'))     transportadora = 'JAMEF';
   if (cnpjEmit.includes('48740351') || nomeEmit.includes('BRASPRESS')) transportadora = 'BRASPRESS';
 
-  // Identificação
-  const nCT  = get('nCT');
+  const nCT   = get('nCT');
+  const chave = get('chCTe') || '';
   const dhEmi = get('dhEmi');
   const data  = dhEmi ? dhEmi.slice(0,10).split('-').reverse().join('/') : '—';
+  const dataISO = dhEmi ? dhEmi.slice(0,10) : '';
 
   // Rota
   const cepOrig = doc.querySelector('enderReme CEP')?.textContent?.replace(/\D/g,'') || '';
@@ -285,279 +332,391 @@ function parseCTe(xmlStr, filename) {
   const munFim  = get('xMunFim') || '';
   const ufFim   = get('UFFim')   || '';
 
+  // Partes
+  const cnpjRem  = doc.querySelector('rem CNPJ')?.textContent || cnpjEmit;
+  const nomeRem  = doc.querySelector('rem xNome')?.textContent || '';
+  const cnpjDest = doc.querySelector('dest CNPJ')?.textContent?.replace(/\D/g,'') || '';
+  const nomeDest = doc.querySelector('dest xNome')?.textContent || '';
+
+  // NF-es
+  const nfes = Array.from(doc.getElementsByTagName('chNFe')).map(e=>e.textContent.slice(25,34)).join(', ');
+
   // Valor cobrado
   const vTPrest = parseFloat(get('vTPrest') || '0');
+  const vFrete  = parseFloat(get('vFrete')  || get('vTPrest') || '0');
 
   // Componentes
   const xNomes = Array.from(doc.getElementsByTagName('xNome')).map(e=>e.textContent);
   const vComps = Array.from(doc.getElementsByTagName('vComp')).map(e=>parseFloat(e.textContent||'0'));
-  const componentes = xNomes.map((n,i)=>({nome:n, valor:vComps[i]||0}));
+  const componentes = xNomes.map((n,i)=>({nome:n,valor:vComps[i]||0}));
 
-  // Pesos / cubagem
+  // Pesos
   let pesoCubado=0, pesoDeclarado=0, volumes=1, metrosCubicos=0;
   Array.from(doc.getElementsByTagName('infQ')).forEach(q => {
     const med = q.querySelector('tpMed')?.textContent?.toUpperCase() || '';
     const val = parseFloat(q.querySelector('qCarga')?.textContent || '0');
-    if (med.includes('CUBADO'))                          pesoCubado    = val;
-    if (med.includes('DECLARADO') || med.includes('REAL')) pesoDeclarado = val;
-    if (med.includes('VOLUME') || med.includes('CAIXA')) volumes       = Math.max(volumes, Math.round(val));
-    if (med.includes('METROS') || med.includes('M3'))   metrosCubicos = val;
-    if (med.includes('BASE'))                            pesoDeclarado = pesoDeclarado || val;
+    if (med.includes('CUBADO'))                              pesoCubado    = val;
+    if (med.includes('DECLARADO')||med.includes('REAL'))     pesoDeclarado = val;
+    if (med.includes('VOLUME')||med.includes('CAIXA'))       volumes       = Math.max(volumes,Math.round(val));
+    if (med.includes('METROS')||med.includes('M3'))          metrosCubicos = val;
+    if (med.includes('BASE')&&pesoDeclarado===0)             pesoDeclarado = val;
   });
 
-  const vCarga    = parseFloat(get('vCarga') || '0');
-  const cnpjDest  = doc.querySelector('dest CNPJ')?.textContent?.replace(/\D/g,'') || '';
+  const vCarga       = parseFloat(get('vCarga') || '0');
+  const pesoCobrado  = Math.max(pesoDeclarado, pesoCubado) || pesoCubado || pesoDeclarado;
+  const freteNFpct   = vCarga > 0 ? parseFloat((vTPrest/vCarga*100).toFixed(2)) : 0;
+  const freteKg      = pesoCobrado > 0 ? parseFloat((vTPrest/pesoCobrado).toFixed(4)) : 0;
 
   return {
-    id: Date.now() + Math.random(),
-    arquivo: filename,
-    transportadora, nCT, data,
+    id: Date.now()+Math.random(),
+    arquivo: filename, transportadora, nCT, chave, data, dataISO,
     cepOrigem: cepOrig, cepDestino: cepDest,
     origem: `${munIni}/${ufIni}`, destino: `${munFim}/${ufFim}`,
-    pesoDeclarado, pesoCubado, metrosCubicos,
-    pesoCobrado: Math.max(pesoDeclarado, pesoCubado) || pesoCubado || pesoDeclarado,
-    volumes, valorMercadoria: vCarga, cnpjDestinatario: cnpjDest,
-    vTPrest, componentes,
-    status: 'cotando', valorCotado: null, divR: null, divP: null, erroMsg: '',
+    rota: `${munIni}/${ufIni} → ${munFim}/${ufFim}`,
+    cnpjRem: cnpjRem.replace(/\D/g,''), nomeRem, cnpjDest, nomeDest,
+    nfes, pesoDeclarado, pesoCubado, metrosCubicos, volumes,
+    pesoCobrado, valorMercadoria: vCarga, vTPrest, vFrete,
+    freteNFpct, freteKg, componentes,
+    status:'cotando', valorCotado:null, divR:null, divP:null, erroMsg:'',
   };
 }
 
 // ── PROCESSA ──
-async function iniciarProcessamento(files) {
-  if (!files || !files.length) return;
-  document.getElementById('alerta').style.display = 'none';
-  document.getElementById('prog-wrap').style.display = 'block';
-  document.getElementById('sec-resultado').style.display = 'block';
-  document.getElementById('overlay').style.display = 'flex';
+async function iniciar(files) {
+  if (!files||!files.length) return;
+  document.getElementById('prog-wrap').style.display='block';
+  document.getElementById('sec-resultado').style.display='block';
+  document.getElementById('overlay').style.display='flex';
 
   const lista = Array.from(files);
-  for (let i = 0; i < lista.length; i++) {
+  for (let i=0;i<lista.length;i++) {
     const f = lista[i];
-    document.getElementById('overlay-msg').textContent = `Processando ${i+1}/${lista.length}: ${f.name}`;
-    document.getElementById('prog-fill').style.width = `${((i)/lista.length)*100}%`;
-    document.getElementById('prog-label').textContent = `${i+1} de ${lista.length} arquivos`;
+    document.getElementById('overlay-msg').textContent=`Processando ${i+1}/${lista.length}: ${f.name}`;
+    document.getElementById('prog-fill').style.width=`${(i/lista.length)*100}%`;
+    document.getElementById('prog-label').textContent=`${i+1} de ${lista.length}`;
     try {
       const xml = await f.text();
       const cte = parseCTe(xml, f.name);
       dados.push(cte);
       renderLinha(cte);
-      atualizarResumo();
+      atualizarKPIs();
       await recotar(cte);
-    } catch(e) {
-      console.error(f.name, e);
-    }
+    } catch(e) { console.error(f.name, e); }
   }
-  document.getElementById('prog-fill').style.width = '100%';
-  document.getElementById('prog-label').textContent = `${lista.length} arquivos processados`;
-  document.getElementById('overlay').style.display = 'none';
-  atualizarResumo();
+  document.getElementById('prog-fill').style.width='100%';
+  document.getElementById('overlay').style.display='none';
+  detectarNaoConsolidados();
+  atualizarKPIs();
 }
 
 // ── RECOTAR ──
 async function recotar(cte) {
-  // BRASPRESS sem sessão — aguarda ativação
-  if (cte.transportadora === 'BRASPRESS' && !bpJsessionid) {
-    cte.status  = 'sem-sessao';
-    cte.erroMsg = 'Cole o JSESSIONID e clique em "Ativar sessão BRASPRESS"';
-    atualizarLinha(cte);
-    return;
+  if (cte.transportadora==='BRASPRESS' && !bpJsessionid) {
+    cte.status='sem-sessao'; cte.erroMsg='Ative a sessão BRASPRESS acima';
+    atualizarLinha(cte); return;
   }
-
   try {
     const pesoReal   = cte.pesoDeclarado || cte.pesoCubado || 1;
-    const pesoCubado = cte.metrosCubicos > 0 ? parseFloat((cte.metrosCubicos * 300).toFixed(2)) : cte.pesoCubado;
-    const metragem   = cte.metrosCubicos > 0 ? cte.metrosCubicos : parseFloat((pesoCubado / 300).toFixed(4));
+    const pesoCubado = cte.metrosCubicos>0 ? parseFloat((cte.metrosCubicos*300).toFixed(2)) : cte.pesoCubado||pesoReal;
+    const metragem   = cte.metrosCubicos>0 ? cte.metrosCubicos : parseFloat((pesoCubado/300).toFixed(4));
 
     const campos = {
-      cepOrigem: cte.cepOrigem, cepDestino: cte.cepDestino,
-      cnpjDestinatario: cte.cnpjDestinatario || '66934555001514',
-      pesoReal, pesoCubado,
-      pesoCobrado: Math.max(pesoReal, pesoCubado),
-      qtdVolumes: cte.volumes || 1,
-      valorMercadoria: cte.valorMercadoria || 1,
-      comprimento: 1, largura: 1, altura: 1,
-      metragemCubica: metragem,
-      embalagem: 'CX', tipoFrete: '1', modal: 'R',
+      cepOrigem:cte.cepOrigem, cepDestino:cte.cepDestino,
+      cnpjDestinatario:cte.cnpjDest||'66934555001514',
+      pesoReal, pesoCubado, pesoCobrado:Math.max(pesoReal,pesoCubado),
+      qtdVolumes:cte.volumes||1, valorMercadoria:cte.valorMercadoria||1,
+      comprimento:1, largura:1, altura:1, metragemCubica:metragem,
+      embalagem:'CX', tipoFrete:'1', modal:'R',
     };
 
-    // Monta body com a transportadora correta
     let body = {};
-    if (cte.transportadora === 'JAMEF') {
-      body = { jamef: campos };
-    } else if (cte.transportadora === 'BRASPRESS') {
-      body = { braspress: { jsessionid: bpJsessionid, ...campos } };
-    } else {
-      body = { jamef: campos };
-    }
-    const resp = await fetch(`${PROXY}/api/cotacao`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(body)
-    });
-    const result = await resp.json();
-    const cotacao = result.resultados?.find(r=>r.transportadora===cte.transportadora)
-                 || (result.resultados?.length > 0 ? result.resultados[0] : null);
+    if (cte.transportadora==='JAMEF')     body = {jamef:campos};
+    else if (cte.transportadora==='BRASPRESS') body = {braspress:{jsessionid:bpJsessionid,...campos}};
+    else body = {jamef:campos};
 
-    if (cotacao?.valorTotal != null) {
+    const resp  = await fetch(`${PROXY}/api/cotacao`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const result = await resp.json();
+    const cotacao = result.resultados?.find(r=>r.transportadora===cte.transportadora)||result.resultados?.[0];
+
+    if (cotacao?.valorTotal!=null) {
       cte.valorCotado = cotacao.valorTotal;
-      cte.divR        = parseFloat((cte.vTPrest - cotacao.valorTotal).toFixed(2));
-      cte.divP        = cotacao.valorTotal > 0
-        ? parseFloat(((cte.vTPrest - cotacao.valorTotal) / cotacao.valorTotal * 100).toFixed(2))
-        : 0;
-      const pct = Math.abs(cte.divP);
-      cte.status = pct <= 10 ? 'ok' : pct <= 20 ? 'warn' : 'crit';
+      cte.divR = parseFloat((cte.vTPrest-cotacao.valorTotal).toFixed(2));
+      cte.divP = cotacao.valorTotal>0 ? parseFloat(((cte.vTPrest-cotacao.valorTotal)/cotacao.valorTotal*100).toFixed(2)) : 0;
+      const p = Math.abs(cte.divP);
+      cte.status = p<=10?'ok':p<=20?'warn':'crit';
     } else {
-      cte.status  = 'erro';
-      cte.erroMsg = result.erros?.[0]?.erro || 'Sem retorno da API';
+      cte.status='erro'; cte.erroMsg=result.erros?.[0]?.erro||'Sem retorno';
     }
-  } catch(e) {
-    cte.status  = 'erro';
-    cte.erroMsg = e.message;
-  }
+  } catch(e) { cte.status='erro'; cte.erroMsg=e.message; }
   atualizarLinha(cte);
-  atualizarResumo();
+  atualizarKPIs();
 }
 
-// ── RENDER ──
-const fmtR = v => v != null
-  ? 'R$ ' + Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})
-  : '—';
+// ── DETECTAR NÃO CONSOLIDADOS ──
+function detectarNaoConsolidados() {
+  // Agrupa por: transportadora + cnpjRem + cnpjDest + dataISO
+  const grupos = {};
+  dados.forEach(d => {
+    if (!d.cnpjRem || !d.cnpjDest || !d.dataISO) return;
+    const key = `${d.transportadora}|${d.cnpjRem}|${d.cnpjDest}|${d.dataISO}`;
+    if (!grupos[key]) grupos[key] = [];
+    grupos[key].push(d);
+  });
+
+  const alertas = Object.entries(grupos).filter(([,g])=>g.length>1).map(([k,g])=>({
+    key:k, transportadora:g[0].transportadora,
+    nomeRem:g[0].nomeRem, cnpjRem:g[0].cnpjRem,
+    nomeDest:g[0].nomeDest, cnpjDest:g[0].cnpjDest,
+    data:g[0].data, rota:g[0].rota,
+    totalFrete:parseFloat(g.reduce((s,c)=>s+c.vTPrest,0).toFixed(2)),
+    ctes:g
+  }));
+
+  renderGrupos(alertas);
+  return alertas;
+}
+
+function renderGrupos(alertas) {
+  const container = document.getElementById('grupos-container');
+  const semAlertas = document.getElementById('sem-alertas');
+
+  if (!alertas.length) {
+    semAlertas.style.display='block';
+    container.querySelectorAll('.grupo-card').forEach(el=>el.remove());
+    return;
+  }
+  semAlertas.style.display='none';
+  container.querySelectorAll('.grupo-card').forEach(el=>el.remove());
+
+  alertas.forEach(g => {
+    const div = document.createElement('div');
+    div.className='grupo-card';
+    const tpClass = g.transportadora==='JAMEF'?'tp-jamef':g.transportadora==='BRASPRESS'?'tp-braspress':'tp-outro';
+    div.innerHTML=`
+      <div class="grupo-header">
+        <div>
+          <div class="grupo-title">
+            <span class="tp-badge ${tpClass}">${g.transportadora}</span>
+            &nbsp;${g.data} · ${g.rota}
+          </div>
+          <div class="grupo-meta" style="margin-top:4px">
+            Remetente: <strong>${g.nomeRem||g.cnpjRem}</strong> &nbsp;→&nbsp;
+            Destinatário: <strong>${g.nomeDest||g.cnpjDest}</strong>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div class="grupo-total">${fmtR(g.totalFrete)}</div>
+          <div class="grupo-meta">${g.ctes.length} CT-es separados</div>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr>
+            <th>Nº CT-e</th><th>Chave</th><th>NF-e(s)</th>
+            <th>Peso (kg)</th><th>Volumes</th><th>Frete R$</th><th>Total R$</th>
+          </tr></thead>
+          <tbody>
+            ${g.ctes.map(c=>`<tr>
+              <td class="mono">${c.nCT}</td>
+              <td class="mono" style="font-size:11px">${c.chave?c.chave.slice(0,20)+'…':'—'}</td>
+              <td style="font-size:12px">${c.nfes||'—'}</td>
+              <td>${c.pesoCobrado>0?c.pesoCobrado.toFixed(2):'—'}</td>
+              <td>${c.volumes||'—'}</td>
+              <td class="mono">${fmtR(c.vFrete)}</td>
+              <td class="mono"><strong>${fmtR(c.vTPrest)}</strong></td>
+            </tr>`).join('')}
+            <tr style="background:var(--amber-bg)">
+              <td colspan="5" style="font-weight:700;color:var(--amber)">Total cobrado separado</td>
+              <td colspan="2" class="mono" style="font-weight:800;color:var(--red)">${fmtR(g.totalFrete)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// ── RENDER TABELA AUDITORIA ──
+const fmtR = v => v!=null ? 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
 
 function renderLinha(cte) {
-  const tr = document.createElement('tr');
-  tr.id = `row-${cte.id}`;
-  tr.innerHTML = htmlLinha(cte);
-  document.getElementById('tbody').appendChild(tr);
+  const tr=document.createElement('tr'); tr.id=`row-${cte.id}`;
+  tr.innerHTML=htmlLinha(cte);
+  document.getElementById('tbody-audit').appendChild(tr);
 }
-
 function atualizarLinha(cte) {
-  const tr = document.getElementById(`row-${cte.id}`);
-  if (tr) tr.innerHTML = htmlLinha(cte);
+  const tr=document.getElementById(`row-${cte.id}`);
+  if(tr) tr.innerHTML=htmlLinha(cte);
 }
-
 function htmlLinha(d) {
-  const tpClass = {JAMEF:'tp-jamef', BRASPRESS:'tp-braspress', OUTRO:'tp-outro'}[d.transportadora] || 'tp-outro';
-  const stMap   = {ok:'✅ OK', warn:'⚠️ Alerta', crit:'🔴 Crítico', cotando:'⏳ Cotando…', erro:'❌ Erro', 'sem-sessao':'🔑 Sem sessão'};
-  const stClass = {ok:'st-ok', warn:'st-warn', crit:'st-crit', cotando:'st-pend', erro:'st-warn', 'sem-sessao':'st-warn'};
-
-  let divHtml = '—';
-  if (d.divR != null) {
-    const cls  = d.divR > 0 ? 'div-pos' : 'div-neg';
-    const sinal= d.divR > 0 ? '+' : '';
-    divHtml = `<span class="${cls}">${sinal}${fmtR(d.divR)}<br><small>${sinal}${d.divP}%</small></span>`;
-  } else if (['erro','sem-sessao'].includes(d.status)) {
-    divHtml = `<span style="font-size:11px;color:var(--amber)">${d.erroMsg}</span>`;
+  const tpCls={JAMEF:'tp-jamef',BRASPRESS:'tp-braspress',OUTRO:'tp-outro'}[d.transportadora]||'tp-outro';
+  const stMap={ok:'✅ OK',warn:'⚠️ Alerta',crit:'🔴 Crítico',cotando:'⏳ Cotando…',erro:'❌ Erro','sem-sessao':'🔑 Sessão BP'};
+  const stCls={ok:'st-ok',warn:'st-warn',crit:'st-crit',cotando:'st-pend',erro:'st-warn','sem-sessao':'st-warn'};
+  let divHtml='—';
+  if(d.divR!=null){
+    const cls=d.divR>0?'div-pos':'div-neg';
+    const s=d.divR>0?'+':'';
+    divHtml=`<span class="${cls}">${s}${fmtR(d.divR)}<br><small>${s}${d.divP}%</small></span>`;
+  } else if(['erro','sem-sessao'].includes(d.status)){
+    divHtml=`<span style="font-size:11px;color:var(--amber)">${d.erroMsg}</span>`;
   }
-
   return `
-    <td><span class="tp-badge ${tpClass}">${d.transportadora}</span></td>
-    <td class="mono" style="font-size:12px">${d.nCT}</td>
+    <td><span class="tp-badge ${tpCls}">${d.transportadora}</span></td>
+    <td class="mono">${d.nCT}</td>
     <td>${d.data}</td>
     <td style="font-size:12px">${d.origem}<br><span style="color:var(--gray-400)">→ ${d.destino}</span></td>
-    <td>${d.pesoCobrado > 0 ? d.pesoCobrado.toFixed(2)+' kg' : '—'}</td>
+    <td>${d.pesoCobrado>0?d.pesoCobrado.toFixed(2)+' kg':'—'}</td>
     <td class="mono">${fmtR(d.valorMercadoria)}</td>
     <td class="mono"><strong>${fmtR(d.vTPrest)}</strong></td>
     <td class="mono">${fmtR(d.valorCotado)}</td>
     <td>${divHtml}</td>
-    <td><span class="st-badge ${stClass[d.status]||'st-pend'}">${stMap[d.status]||d.status}</span></td>
+    <td><span class="st-badge ${stCls[d.status]||'st-pend'}">${stMap[d.status]||d.status}</span></td>
     <td><button class="btn btn-outline btn-sm" onclick="verDetalhe(${d.id})">Ver</button></td>
   `;
 }
 
-function atualizarResumo() {
-  const n      = dados.length;
-  const ok     = dados.filter(d=>d.status==='ok').length;
-  const warn   = dados.filter(d=>d.status==='warn').length;
-  const crit   = dados.filter(d=>d.status==='crit').length;
-  const pend   = dados.filter(d=>['cotando','pend','sem-sessao','erro'].includes(d.status)).length;
-  const tCob   = dados.reduce((s,d)=>s+(d.vTPrest||0), 0);
-  const tCot   = dados.reduce((s,d)=>s+(d.valorCotado||0), 0);
-  const tDiv   = tCob - tCot;
+// ── KPIs ──
+function atualizarKPIs() {
+  const n    = dados.length;
+  const ok   = dados.filter(d=>d.status==='ok').length;
+  const warn = dados.filter(d=>d.status==='warn').length;
+  const crit = dados.filter(d=>d.status==='crit').length;
+  const pend = dados.filter(d=>['cotando','pend','sem-sessao','erro'].includes(d.status)).length;
+  const tCob = dados.reduce((s,d)=>s+(d.vTPrest||0),0);
+  const tCot = dados.reduce((s,d)=>s+(d.valorCotado||0),0);
+  const tDiv = tCob-tCot;
 
-  document.getElementById('r-total').textContent   = n;
-  document.getElementById('r-ok').textContent      = ok;
-  document.getElementById('r-warn').textContent    = warn;
-  document.getElementById('r-crit').textContent    = crit;
-  document.getElementById('r-pend').textContent    = pend;
-  document.getElementById('r-cobrado').textContent = fmtR(tCob);
-  document.getElementById('r-cotado').textContent  = tCot > 0 ? fmtR(tCot) : '—';
-  const divEl = document.getElementById('r-div');
-  divEl.textContent   = tCot > 0 ? (tDiv>=0?'+':'')+fmtR(tDiv) : '—';
-  divEl.className     = 'rv ' + (tDiv > 0 ? 'crit' : tDiv < 0 ? 'ok' : '');
+  document.getElementById('k-total').textContent  = n;
+  document.getElementById('k-ok').textContent     = ok;
+  document.getElementById('k-warn').textContent   = warn;
+  document.getElementById('k-crit').textContent   = crit;
+  document.getElementById('k-pend').textContent   = pend;
+  document.getElementById('k-cobrado').textContent= fmtR(tCob);
+  document.getElementById('k-cotado').textContent = tCot>0?fmtR(tCot):'—';
+  const divEl=document.getElementById('k-div');
+  divEl.textContent=(tDiv>=0?'+':'')+fmtR(tDiv);
+  divEl.className='kv '+(tDiv>0?'crit':tDiv<0?'ok':'');
+
+  // Conta grupos não consolidados
+  const grupos = {};
+  dados.forEach(d=>{
+    if(!d.cnpjRem||!d.cnpjDest||!d.dataISO)return;
+    const k=`${d.transportadora}|${d.cnpjRem}|${d.cnpjDest}|${d.dataISO}`;
+    grupos[k]=(grupos[k]||0)+1;
+  });
+  const nConsolid = Object.values(grupos).filter(v=>v>1).length;
+  document.getElementById('k-nconsolid').textContent = nConsolid;
 }
 
 // ── DETALHE ──
 function verDetalhe(id) {
-  const d = dados.find(x=>x.id===id);
-  if (!d) return;
-  document.getElementById('modal-title').textContent = `CT-e ${d.nCT} — ${d.transportadora}`;
-
-  const rows = [
-    ['Arquivo', d.arquivo],
-    ['Nº CT-e', d.nCT],
-    ['Data emissão', d.data],
-    ['Origem', `${d.origem} · CEP ${d.cepOrigem}`],
-    ['Destino', `${d.destino} · CEP ${d.cepDestino}`],
-    ['Peso declarado', `${d.pesoDeclarado} kg`],
-    ['Peso cubado', `${d.pesoCubado} kg`],
-    ['Metragem cúbica', `${d.metrosCubicos} m³`],
-    ['Peso cobrado', `${d.pesoCobrado} kg`],
-    ['Volumes', d.volumes],
-    ['Valor mercadoria', fmtR(d.valorMercadoria)],
+  const d=dados.find(x=>x.id===id); if(!d)return;
+  document.getElementById('modal-title').textContent=`CT-e ${d.nCT} — ${d.transportadora}`;
+  const rows=[
+    ['Arquivo',d.arquivo],['Nº CT-e',d.nCT],['Chave',d.chave?d.chave:'—'],
+    ['Data emissão',d.data],['Remetente',d.nomeRem||'—'],['Destinatário',d.nomeDest||'—'],
+    ['Origem',`${d.origem} · CEP ${d.cepOrigem}`],['Destino',`${d.destino} · CEP ${d.cepDestino}`],
+    ['NF-e(s)',d.nfes||'—'],['Peso declarado',`${d.pesoDeclarado} kg`],
+    ['Peso cubado',`${d.pesoCubado} kg`],['Metragem',`${d.metrosCubicos} m³`],
+    ['Peso cobrado',`${d.pesoCobrado} kg`],['Volumes',d.volumes],
+    ['Valor mercadoria',fmtR(d.valorMercadoria)],
   ];
-
-  let html = rows.map(([l,v])=>`<div class="drow"><span class="dl">${l}</span><span class="dv">${v}</span></div>`).join('');
-
-  html += `<div class="sec-label">Cobrança e auditoria</div>`;
-  const audit = [
-    ['Valor total cobrado', fmtR(d.vTPrest)],
-    ['Valor recotado', fmtR(d.valorCotado)],
-    ['Divergência (R$)', d.divR!=null ? (d.divR>=0?'+':'')+fmtR(d.divR) : d.erroMsg||'—'],
-    ['Divergência (%)', d.divP!=null ? (d.divP>=0?'+':'')+d.divP+'%' : '—'],
-    ['Status', d.status.toUpperCase()],
+  let html=rows.map(([l,v])=>`<div class="drow"><span class="dl">${l}</span><span class="dv">${v}</span></div>`).join('');
+  html+=`<div class="sec-label-m">Cobrança e auditoria</div>`;
+  const audit=[
+    ['Valor cobrado (CT-e)',fmtR(d.vTPrest)],['Valor recotado',fmtR(d.valorCotado)],
+    ['Frete/NF%',d.freteNFpct>0?d.freteNFpct+'%':'—'],
+    ['Divergência R$',d.divR!=null?(d.divR>=0?'+':'')+fmtR(d.divR):d.erroMsg||'—'],
+    ['Divergência %',d.divP!=null?(d.divP>=0?'+':'')+d.divP+'%':'—'],
+    ['Status',d.status.toUpperCase()],
   ];
-  html += audit.map(([l,v])=>`<div class="drow"><span class="dl">${l}</span><span class="dv">${v}</span></div>`).join('');
-
-  if (d.componentes?.length > 0) {
-    html += `<div class="sec-label">Componentes do frete cobrado</div>`;
-    html += `<table class="comp-tbl"><thead><tr><th>Componente</th><th style="text-align:right">Valor</th></tr></thead><tbody>`;
-    d.componentes.forEach(c => {
-      html += `<tr><td>${c.nome}</td><td style="text-align:right;font-family:monospace">${fmtR(c.valor)}</td></tr>`;
-    });
-    html += `</tbody></table>`;
+  html+=audit.map(([l,v])=>`<div class="drow"><span class="dl">${l}</span><span class="dv">${v}</span></div>`).join('');
+  if(d.componentes?.length>0){
+    html+=`<div class="sec-label-m">Componentes do frete cobrado</div>`;
+    html+=`<table class="comp-tbl"><thead><tr><th>Componente</th><th style="text-align:right">Valor</th></tr></thead><tbody>`;
+    d.componentes.forEach(c=>{html+=`<tr><td>${c.nome}</td><td style="text-align:right;font-family:monospace">${fmtR(c.valor)}</td></tr>`;});
+    html+=`</tbody></table>`;
   }
-
-  document.getElementById('modal-bdy').innerHTML = html;
+  document.getElementById('modal-bdy').innerHTML=html;
   document.getElementById('modal-bg').classList.add('open');
 }
+function fecharModal(e){if(!e||e.target===document.getElementById('modal-bg'))document.getElementById('modal-bg').classList.remove('open');}
 
-function fecharModal(e) {
-  if (!e || e.target===document.getElementById('modal-bg'))
-    document.getElementById('modal-bg').classList.remove('open');
+// ── EXPORTAR AUDITORIA ──
+function exportarAuditoriaXLSX() {
+  if(!dados.length)return;
+  const wb=XLSX.utils.book_new();
+  const hdrs=['Transportadora','Nº CT-e','Chave Acesso','Data','Remetente','CNPJ Rem','Destinatário','CNPJ Dest','Origem','Destino','CEP Orig','CEP Dest','NF-e(s)','Peso Cob (kg)','Volumes','Valor NF (R$)','Cobrado (R$)','Recotado (R$)','Diverg R$','Diverg %','Frete/NF%','Status'];
+  const rows=[hdrs,...dados.map(d=>[
+    d.transportadora,d.nCT,d.chave,d.data,d.nomeRem,d.cnpjRem,d.nomeDest,d.cnpjDest,
+    d.origem,d.destino,d.cepOrigem,d.cepDestino,d.nfes,
+    d.pesoCobrado?.toFixed(2)||'',d.volumes,
+    d.valorMercadoria?.toFixed(2)||'',d.vTPrest?.toFixed(2)||'',
+    d.valorCotado?.toFixed(2)||'',d.divR?.toFixed(2)||'',
+    d.divP?.toFixed(2)||'',d.freteNFpct?.toFixed(2)||'',d.status
+  ])];
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[14,10,44,10,28,16,28,16,16,16,10,10,28,12,8,14,14,14,12,10,10,12].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb,ws,'Auditoria');
+  XLSX.writeFile(wb,`auditoria_cte_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
-// ── EXPORTAR ──
-function exportar() {
-  const header = ['Transportadora','Nº CT-e','Data','Origem','Destino','CEP Orig','CEP Dest','Peso Cob (kg)','Valor NF (R$)','Cobrado (R$)','Recotado (R$)','Diverg R$','Diverg %','Status'];
-  const rows   = dados.map(d=>[
-    d.transportadora, d.nCT, d.data, d.origem, d.destino, d.cepOrigem, d.cepDestino,
-    d.pesoCobrado?.toFixed(2)||'', d.valorMercadoria?.toFixed(2)||'',
-    d.vTPrest?.toFixed(2)||'', d.valorCotado?.toFixed(2)||'',
-    d.divR?.toFixed(2)||'', d.divP?.toFixed(2)||'', d.status,
-  ]);
-  const csv = [header,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';')).join('\n');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));
-  a.download = `auditoria_cte_${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
+// ── EXPORTAR NÃO CONSOLIDADOS ──
+function exportarConsolidadoXLSX() {
+  const grupos={};
+  dados.forEach(d=>{
+    if(!d.cnpjRem||!d.cnpjDest||!d.dataISO)return;
+    const k=`${d.transportadora}|${d.cnpjRem}|${d.cnpjDest}|${d.dataISO}`;
+    if(!grupos[k])grupos[k]=[];
+    grupos[k].push(d);
+  });
+  const alertas=Object.entries(grupos).filter(([,g])=>g.length>1).map(([,g])=>g);
+  if(!alertas.length){alert('Nenhum frete não consolidado encontrado.');return;}
+
+  const wb=XLSX.utils.book_new();
+  const hdrs=['Transportadora','CNPJ Transp','Data','Rota','Remetente','CNPJ Rem','Destinatário','CNPJ Dest','Nº CT-e','Chave Acesso','NF-e(s)','Frete R$','Total R$','Peso (kg)','Volumes','Motivo'];
+  const rows=[hdrs];
+  alertas.forEach(g=>{
+    g.forEach(c=>{
+      rows.push([
+        c.transportadora,'',c.data,c.rota,
+        c.nomeRem,c.cnpjRem,c.nomeDest,c.cnpjDest,
+        c.nCT,c.chave,c.nfes,
+        c.vFrete?.toFixed(2)||'',c.vTPrest?.toFixed(2)||'',
+        c.pesoCobrado?.toFixed(2)||'',c.volumes||'',
+        'Frete não consolidado — mesmo remetente, destinatário, data e transportadora'
+      ]);
+    });
+    rows.push(['---TOTAL GRUPO---','','','','','','','','','','','',
+      g.reduce((s,c)=>s+c.vTPrest,0).toFixed(2),'','','']);
+    rows.push([]);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[14,16,10,30,28,16,28,16,10,44,28,12,12,10,8,60].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb,ws,'Frete Não Consolidado');
+
+  // Aba resumo
+  const rsm=[['RESUMO — FRETES NÃO CONSOLIDADOS'],[''],
+    ['Transportadora','Data','Rota','Remetente','Destinatário','Qtd CT-es','Total Frete R$']];
+  alertas.forEach(g=>rsm.push([
+    g[0].transportadora,g[0].data,g[0].rota,g[0].nomeRem,g[0].nomeDest,
+    g.length,g.reduce((s,c)=>s+c.vTPrest,0).toFixed(2)
+  ]));
+  rsm.push([],['Total grupos',alertas.length],
+    ['Total CT-es',alertas.reduce((s,g)=>s+g.length,0)],
+    ['Total frete',alertas.reduce((s,g)=>s+g.reduce((a,c)=>a+c.vTPrest,0),0).toFixed(2)]);
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rsm),'Resumo Contestação');
+  XLSX.writeFile(wb,`nao_consolidados_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
 function limpar() {
-  dados = [];
-  document.getElementById('tbody').innerHTML = '';
-  document.getElementById('sec-resultado').style.display = 'none';
-  document.getElementById('prog-wrap').style.display = 'none';
-  atualizarResumo();
+  dados=[];
+  document.getElementById('tbody-audit').innerHTML='';
+  document.getElementById('sec-resultado').style.display='none';
+  document.getElementById('prog-wrap').style.display='none';
+  renderGrupos([]);
+  atualizarKPIs();
 }
 </script>
 </body>
