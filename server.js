@@ -459,6 +459,16 @@ async function jamefCotacao(campos) {
 // ═══════════════════════════════════════════════════════════════
 let bpSession = { jsessionid: null };
 
+// ─────────────────────────────────────────────
+// CONFIGURAÇÃO API BRASPRESS OFICIAL
+// ─────────────────────────────────────────────
+const BRASPRESS_API = {
+  host:      'api.braspress.com',
+  path:      '/v1/cotacao/calcular/json',
+  authBasic: 'NjY5MzQ1NTUwMDE1MTRfUFJEOmUwNVdmbW5wOUE1bk9UTTc=',
+  cnpjRem:   '66934555001514',
+};
+
 function floatToBR(v, dec = 2) {
   return Number(v).toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
 }
@@ -498,173 +508,71 @@ async function braspressGetFilial(cep, jsessionid) {
 }
 
 async function braspressCotacao(campos) {
-  let jsessionid = campos.jsessionid && campos.jsessionid !== 'POPUP_AUTH'
-    ? campos.jsessionid
-    : bpSession.jsessionid;
+  const pesoReal   = Number(campos.pesoReal);
+  const pesoCubado = Number(campos.pesoCubado ?? pesoReal);
+  const pesoCobrado= Math.max(pesoReal, pesoCubado);
+  const qtd        = Number(campos.qtdVolumes) || 1;
 
-  if (!jsessionid || jsessionid === 'POPUP_AUTH') {
-    throw new Error('Sessão BRASPRESS não disponível. Faça login pelo popup da BRASPRESS e tente novamente.');
-  }
-
-  bpSession.jsessionid = jsessionid;
-
-  const pesoReal    = Number(campos.pesoReal);
-  const pesoCubado  = Number(campos.pesoCubado ?? pesoReal);
-  const pesoCobrado = Math.max(pesoReal, pesoCubado);
-  const valor       = Number(campos.valorMercadoria);
-  const qtd         = Number(campos.qtdVolumes) || 1;
-
-  const [orig, dest] = await Promise.all([
-    braspressGetFilial(campos.cepOrigem,  jsessionid),
-    braspressGetFilial(campos.cepDestino, jsessionid)
-  ]);
-
-  const GVR_CNPJ_FORMATADO = '66.934.555/0015-14';
-  const GVR_RAZAO_SOCIAL   = 'GVR HOME INDUSTRIA E COMERCIO DE ENXOVAIS LTDA';
-  const GVR_EMAIL          = 'diego.santos@trousseau.com.br';
-
-  const params = new URLSearchParams();
-  params.append('email',                   GVR_EMAIL);
-  params.append('modal',                   campos.modal || 'R');
-  params.append('tipoFrete',               campos.tipoFrete || '1');
-  params.append('cnpjRemetenteStr',        GVR_CNPJ_FORMATADO);
-  params.append('razaoSocialRemetente',    GVR_RAZAO_SOCIAL);
-  params.append('cnpjDestinatarioStr',     formatCNPJ(campos.cnpjDestinatario));
-  params.append('razaoSocialDestinatario', '');
-  params.append('cnpjConsignadoStr',       '');
-  params.append('razaoSocialConsignado',   '');
-  params.append('cepOrigem',               String(campos.cepOrigem).replace(/\D/g,''));
-  params.append('filialOrigem',            orig.filial);
-  params.append('cepDestino',              String(campos.cepDestino).replace(/\D/g,''));
-  params.append('filialDestino',           dest.filial);
-  params.append('endereco',               dest.endereco);
-  params.append('volumes',                String(qtd));
-  params.append('peso',                   floatToBR(pesoCobrado));
-  params.append('vlrMercadoria',          floatToBR(valor));
-  // Suporte a múltiplas caixas
+  // Monta cubagem — suporta múltiplas caixas
   const caixas = campos.caixas && campos.caixas.length > 0
     ? campos.caixas
-    : [{ comp: Number(campos.comprimento)||1, larg: Number(campos.largura)||1, alt: Number(campos.altura)||1, qtd: qtd }];
+    : [{comp: Number(campos.comprimento)||1, larg: Number(campos.largura)||1, alt: Number(campos.altura)||1, qtd}];
 
-  caixas.forEach((cx, i) => {
-    params.append(`cubagem[${i}].comprimento`, floatToBR(cx.comp || 1));
-    params.append(`cubagem[${i}].largura`,     floatToBR(cx.larg || 1));
-    params.append(`cubagem[${i}].altura`,      floatToBR(cx.alt  || 1));
-    params.append(`cubagem[${i}].volumes`,     String(cx.qtd || 1));
+  const cubagem = caixas.map(cx => ({
+    comprimento: Number(cx.comp) || 1,
+    largura:     Number(cx.larg) || 1,
+    altura:      Number(cx.alt)  || 1,
+    volumes:     Number(cx.qtd)  || 1,
+  }));
+
+  const payload = JSON.stringify({
+    cnpjRemetente:    parseInt(BRASPRESS_API.cnpjRem),
+    cnpjDestinatario: parseInt(String(campos.cnpjDestinatario).replace(/\D/g,'')),
+    modal:            campos.modal === 'A' ? 'A' : 'R',
+    tipoFrete:        String(campos.tipoFrete || '1'),
+    cepOrigem:        parseInt(String(campos.cepOrigem).replace(/\D/g,'')),
+    cepDestino:       parseInt(String(campos.cepDestino).replace(/\D/g,'')),
+    vlrMercadoria:    Number(campos.valorMercadoria),
+    peso:             pesoCobrado,
+    volumes:          qtd,
+    cubagem,
   });
 
-  const bodyStr = params.toString();
+  console.log('[BRASPRESS API] Payload:', payload);
+
   const result = await httpsRequest({
-    hostname: 'blue.braspress.com',
-    path:     '/site/w/cotacao/calcular',
+    hostname: BRASPRESS_API.host,
+    path:     BRASPRESS_API.path,
     method:   'POST',
     headers: {
-      'Content-Type':    'application/x-www-form-urlencoded; charset=UTF-8',
-      'Accept':          '*/*',
-      'X-Requested-With':'XMLHttpRequest',
-      'Origin':          'https://blue.braspress.com',
-      'Referer':         'https://blue.braspress.com/site/w/cotacao/view',
-      'Cookie':          `JSESSIONID=${jsessionid}`,
-      'User-Agent':      'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-      'Content-Length':  Buffer.byteLength(bodyStr)
+      'Content-Type':   'application/json; charset=utf-8',
+      'Accept':         'application/json',
+      'Authorization':  `Basic ${BRASPRESS_API.authBasic}`,
+      'Content-Length': Buffer.byteLength(payload),
     }
-  }, bodyStr);
+  }, payload);
 
-  // BRASPRESS retorna HTML — tenta JSON primeiro, senão parseia HTML
-  let data = null;
-  try { data = JSON.parse(result.body); } catch { data = null; }
+  console.log('[BRASPRESS API] Status:', result.status, 'Body:', result.body.slice(0, 300));
+
+  let data;
+  try { data = JSON.parse(result.body); }
+  catch { throw new Error(`BRASPRESS API retornou resposta inválida (status ${result.status})`); }
 
   if (result.status >= 400) {
-    const msg = data ? (data.message || data.erro || `Erro ${result.status}`) : `Erro ${result.status} BRASPRESS`;
+    const msg = data.message || (data.errorList && data.errorList[0]?.message) || `Erro ${result.status} BRASPRESS`;
     throw new Error(msg);
-  }
-
-  // Se retornou JSON válido
-  if (data) {
-    const valorTotalRaw = data.valorTotalFrete ?? data.valorTotal ?? data.total ?? null;
-    return {
-      transportadora: 'BRASPRESS',
-      numeroCotacao:  String(data.protocoloCotacaoOnline || data.protocolo || data.numeroCotacao || '—'),
-      valorFrete:     valorTotalRaw != null ? Number(String(valorTotalRaw).replace(/\./g,'').replace(',','.')) : null,
-      valorImpostos:  null,
-      valorTotal:     valorTotalRaw != null ? Number(String(valorTotalRaw).replace(/\./g,'').replace(',','.')) : null,
-      prazoEntrega:   data.dataEntregaPrevista ?? data.dataEntrega ?? data.prazo ?? null,
-      diasUteis:      data.diasUteis ?? null,
-      pesoReal, pesoCubado, pesoCobrado,
-      raw: data
-    };
-  }
-
-  // Parseia HTML da resposta BRASPRESS
-  const rawHtml = result.body;
-  // Guarda HTML renderizado para debug (remove tags para exibição)
-  const htmlSemTags = rawHtml.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ');
-  bpSession._lastHtml = htmlSemTags; // debug mostra texto limpo
-  const html = htmlSemTags; // usa texto sem tags para os regex
-  console.log('[BRASPRESS HTML length]', html.length);
-  console.log('[BRASPRESS HTML sample]', html.slice(0, 500));
-
-  // Extrai protocolo — "Protocolo da Cotação Online 363431246"
-  const protMatch = html.match(/Protocolo da Cota[^\d]*(\d{6,})/i) ||
-                    html.match(/protocolo[\s\S]{0,50}?(\d{6,})/i);
-  const protocolo = protMatch ? protMatch[1] : '—';
-
-  // Extrai valor total — "Valor Total Frete 402.95" (ponto como decimal, sem R$)
-  // Garante pelo menos 3 dígitos antes do ponto (valor mínimo R$100)
-  const valorMatch = html.match(/Valor Total Frete[\s\S]{0,30}?([\d]{2,}\.[\d]{1,2})(?![\d])/i);
-  const valorStr   = valorMatch ? valorMatch[1] : null;
-  const valorTotal = valorStr ? parseFloat(valorStr) : null;
-  console.log('[BRASPRESS VALOR] Match:', valorStr, 'Total:', valorTotal);
-
-  // Extrai prazo — "Thu Jun 25 00:00:00 BRT 2026"
-  // Converte para dd/mm/yyyy
-  // Prazo — "Thu Jun 25 00:00:00 BRT 2026"
-  const mesesBP = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
-  const prazoMatch = html.match(/((?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(\w+)\s+(\d+)\s+[\d:]+\s+\w+\s+(\d{4}))/i);
-  let prazo = null;
-  if (prazoMatch) {
-    const mes = mesesBP[prazoMatch[2]];
-    const dia = parseInt(prazoMatch[3]);
-    const ano = parseInt(prazoMatch[4]);
-    if (mes !== undefined) {
-      prazo = String(dia).padStart(2,'0') + '/' + String(mes+1).padStart(2,'0') + '/' + ano;
-    }
-  }
-  console.log('[BRASPRESS PRAZO]', prazo);
-
-  // Extrai dias úteis — "Dias úteis / Horas 2"
-  const diasMatch = html.match(/Dias [uú]teis[^\d]{0,20}(\d+)/i);
-  const diasUteis = diasMatch ? Number(diasMatch[1]) : null;
-
-  if (!valorTotal && !prazo) {
-    // Verifica se é página de sucesso sem dados visíveis
-    if (html.includes('sucesso') || html.includes('Cotação realizada')) {
-      return {
-        transportadora: 'BRASPRESS',
-        numeroCotacao:  protocolo,
-        valorFrete:     null,
-        valorImpostos:  null,
-        valorTotal:     null,
-        prazoEntrega:   prazo,
-        diasUteis,
-        pesoReal, pesoCubado, pesoCobrado,
-        mensagem:       'Cotação realizada — dados enviados por e-mail. Verifique seu e-mail para o valor.',
-        raw:            { html: html.slice(0, 2000) }
-      };
-    }
-    throw new Error('BRASPRESS: sessão expirada ou resposta inesperada. Faça login novamente no popup.');
   }
 
   return {
     transportadora: 'BRASPRESS',
-    numeroCotacao:  protocolo,
-    valorFrete:     valorTotal,
+    numeroCotacao:  String(data.id || '—'),
+    valorFrete:     data.totalFrete ?? null,
     valorImpostos:  null,
-    valorTotal:     valorTotal,
-    prazoEntrega:   prazo,
-    diasUteis,
+    valorTotal:     data.totalFrete ?? null,
+    prazoEntrega:   data.prazo ? `${data.prazo} dias úteis` : null,
+    diasUteis:      data.prazo ?? null,
     pesoReal, pesoCubado, pesoCobrado,
-    raw: { html: html.slice(0, 2000) }
+    raw: data,
   };
 }
 
@@ -739,7 +647,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === 'GET' && pathname === '/health') {
-    return json(res, 200, { status: 'ok', versao: '2.1.0', transportadoras: ['JAMEF ✅', 'BRASPRESS ✅'] });
+    return json(res, 200, { status: 'ok', versao: '3.0.0', transportadoras: ['JAMEF ✅', 'BRASPRESS API ✅', 'MOVVI ✅'] });
   }
 
   // Rotas GET especiais
@@ -759,7 +667,7 @@ const server = http.createServer(async (req, res) => {
   try {
     // BRASPRESS
     if (pathname === '/api/braspress/session') {
-      return json(res, 200, { jsessionid: bpSession.jsessionid || null });
+      return json(res, 200, { jsessionid: 'API_OFICIAL', status: 'ok' });
     }
     if (pathname === '/api/braspress/cotacao') {
       return json(res, 200, { ok: true, resultado: await braspressCotacao(body) });
@@ -774,7 +682,8 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/cotacao') {
       const promessas = [];
       if (body.jamef)     promessas.push(jamefCotacao(body.jamef).catch(e => ({ _erro: true, transportadora: 'JAMEF',     erro: e.message })));
-      if (body.braspress) promessas.push(braspressCotacao(body.braspress).catch(e => ({ _erro: true, transportadora: 'BRASPRESS', erro: e.message })));
+      // BRASPRESS agora usa API oficial — sempre inclui na cotação
+      promessas.push(braspressCotacao(body.braspress || body.jamef || {}).catch(e => ({ _erro: true, transportadora: 'BRASPRESS', erro: e.message })));
       const todos     = await Promise.all(promessas);
       const resultados = todos.filter(r => !r._erro);
       const erros      = todos.filter(r =>  r._erro).map(({ _erro, ...rest }) => rest);

@@ -145,6 +145,8 @@
   .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--gray-400); }
 
   @media (max-width: 700px) { .g2,.g3,.cred-grid,.compare-grid { grid-template-columns: 1fr; } main { padding: 14px; } .caixas-table { font-size: 12px; } }
+  footer { text-align: center; padding: 16px; font-size: 11px; color: var(--gray-400); border-top: 1px solid var(--gray-100); margin-top: 8px; }
+  footer a { color: var(--gray-400); text-decoration: none; }
 </style>
 </head>
 <body>
@@ -157,7 +159,7 @@
   <div id="user-info">
     <span class="badge badge-green">JAMEF ✅</span>
     <span class="badge badge-green">MOVVI ✅</span>
-    <span class="badge" id="badge-braspress" style="background:#fef3c7;color:#92400e">BRASPRESS</span>
+    <span class="badge badge-green">BRASPRESS ✅</span>
     <a href="/auditoria" class="nav-audit">🔍 Auditoria CT-e</a>
     <button id="btn-logout" onclick="logout()">Sair</button>
   </div>
@@ -208,6 +210,7 @@
     <div class="login-header">
       <div class="mark">TMS GVR</div>
       <div class="sub">Sistema de cotação de frete — JAMEF · MOVVI · BRASPRESS</div>
+      <div style="font-size:11px;color:var(--gray-400);margin-top:6px">Desenvolvido por Diego Santos · GVR Home</div>
     </div>
     <div class="card">
       <div class="card-header blue">🔐 Credenciais de acesso</div>
@@ -233,14 +236,9 @@
           <!-- BRASPRESS -->
           <div class="cred-box">
             <div class="cred-title">
-              <div class="cred-status" id="st-bp"></div>BRASPRESS
+              <div class="cred-status ok"></div>BRASPRESS
             </div>
-            <div class="alert alert-info" style="display:block;font-size:12px;padding:8px 10px;line-height:1.6;margin:0">
-              Clique no botão abaixo para abrir o portal da BRASPRESS. Faça login normalmente.
-            </div>
-            <button class="popup-btn red" id="btn-bp-login" onclick="conectarBraspress()">🔗 Conectar BRASPRESS</button>
-            <div id="bp-status-msg" style="display:none;font-size:12px;color:var(--green);font-weight:600;text-align:center">✅ BRASPRESS conectada!</div>
-            <input type="hidden" id="bp-jsessionid">
+            <div class="cred-msg">✅ API oficial BRASPRESS configurada.<br>Nenhum login necessário.</div>
           </div>
 
         </div>
@@ -386,8 +384,8 @@
 
 <script>
 const PROXY = window.location.origin;
-let sess = { jamef: { ready: true }, braspress: { jsessionid: null } };
-let bpPopup = null, bpPollTimer = null;
+let sess = { jamef: { ready: true }, braspress: { ready: true } };
+// BRASPRESS via API oficial — sem popup
 let caixaIdCounter = 0;
 let _pendingMovviCotacao = null; // guarda os campos enquanto aguarda cadastro
 
@@ -541,30 +539,7 @@ function salvarCidadeMovvi() {
   if (_pendingMovviCotacao) fazerCotacao();
 }
 
-// ── BRASPRESS POPUP ──
-function conectarBraspress() {
-  const w=520,h=680,left=Math.round(window.screenX+(window.outerWidth-w)/2),top=Math.round(window.screenY+(window.outerHeight-h)/2);
-  bpPopup=window.open('https://www.braspress.com/area-do-cliente/minha-conta/','braspress_login',`width=${w},height=${h},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes`);
-  if(!bpPopup){showAlert('alert-login','Popup bloqueado. Permita popups para este site.');return;}
-  const btn=document.getElementById('btn-bp-login');
-  btn.innerHTML='⏳ Faça login no popup...'; btn.disabled=true;
-  setTimeout(()=>{if(!sess.braspress.jsessionid){btn.innerHTML='✅ Já fiz login — clique para continuar';btn.disabled=false;btn.className='popup-btn green';btn.onclick=()=>finalizarBraspress();}},5000);
-  bpPollTimer=setInterval(()=>{if(!bpPopup||bpPopup.closed){clearInterval(bpPollTimer);if(!sess.braspress.jsessionid){btn.innerHTML='✅ Já fiz login — clique para continuar';btn.disabled=false;btn.className='popup-btn green';btn.onclick=()=>finalizarBraspress();}}},800);
-}
-function finalizarBraspress() {
-  let jsid=null;
-  try{if(bpPopup&&!bpPopup.closed){const c=bpPopup.document.cookie;const m=c.match(/JSESSIONID=([^;]+)/);if(m)jsid=m[1];}}catch(e){}
-  if(!jsid)jsid=prompt('Cole o JSESSIONID da BRASPRESS:\n(F12 → Application → Cookies → blue.braspress.com → JSESSIONID)');
-  if(!jsid||!jsid.trim())jsid='POPUP_AUTH';
-  sess.braspress.jsessionid=jsid.trim();
-  if(bpPopup&&!bpPopup.closed)bpPopup.close();
-  document.getElementById('st-bp').className='cred-status ok';
-  document.getElementById('bp-status-msg').style.display='block';
-  const btn=document.getElementById('btn-bp-login');
-  btn.innerHTML='✅ BRASPRESS conectada'; btn.disabled=true;
-  document.getElementById('badge-braspress').className='badge badge-green';
-  document.getElementById('badge-braspress').textContent='BRASPRESS ✅';
-}
+// ── BRASPRESS — API Oficial (sem popup necessário) ──
 
 // ── UTILS ──
 const fmt=v=>v!=null?'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2}):'—';
@@ -625,12 +600,7 @@ function logout(){
   document.getElementById('user-info').style.display='none';
   document.getElementById('resultado').style.display='none';
   document.getElementById('kpi-bar').style.display='none';
-  document.getElementById('st-bp').className='cred-status';
-  document.getElementById('bp-status-msg').style.display='none';
-  document.getElementById('btn-bp-login').innerHTML='🔗 Conectar BRASPRESS';
-  document.getElementById('btn-bp-login').disabled=false;
-  document.getElementById('btn-bp-login').className='popup-btn red';
-  document.getElementById('btn-bp-login').onclick=()=>conectarBraspress();
+  // BRASPRESS API oficial — sem estado de sessão para resetar
 }
 
 // ── COTAÇÃO ──
@@ -685,7 +655,7 @@ async function fazerCotacao(){
   document.getElementById('spin-cotar').style.display='block';
   document.getElementById('btn-cotar-txt').textContent='Calculando...';
   document.getElementById('btn-cotar').disabled=true;
-  loading('Consultando JAMEF e BRASPRESS...');
+  loading('Consultando JAMEF, MOVVI e BRASPRESS...');
 
   try {
     const body={jamef:campos};
@@ -777,5 +747,8 @@ function limpar(){
   _pendingMovviCotacao=null;
 }
 </script>
+<footer>
+  Desenvolvido por <strong>Diego Santos</strong> · GVR Home / Trousseau · TMS v3.0
+</footer>
 </body>
 </html>

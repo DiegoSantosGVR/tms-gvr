@@ -167,6 +167,7 @@ main { flex:1; padding:28px 20px; max-width:1400px; margin:0 auto; width:100%; }
 }
 
 @media(max-width:900px) { main { padding:14px; } .tbl { font-size:11px; } }
+footer { text-align:center; padding:16px; font-size:11px; color:var(--gray-400); border-top:1px solid var(--gray-100); margin-top:8px; }
 </style>
 </head>
 <body>
@@ -201,11 +202,9 @@ main { flex:1; padding:28px 20px; max-width:1400px; margin:0 auto; width:100%; }
   <div class="card">
     <div class="card-header blue">📂 Importar CT-es para auditoria</div>
     <div class="card-body">
-      <div class="session-box" id="session-box">
-        <span style="font-size:12px;font-weight:700;color:var(--gray-600);white-space:nowrap">BRASPRESS · JSESSIONID</span>
-        <input type="text" id="bp-jsessionid" placeholder="Cole o JSESSIONID para recotação automática da BRASPRESS">
-        <button class="btn btn-outline btn-sm" onclick="ativarSessao()">Ativar</button>
-        <span id="bp-status" style="font-size:12px;font-weight:600;color:var(--gray-400);white-space:nowrap">⬤ Sem sessão</span>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;padding:10px 14px;background:var(--green-bg);border:1.5px solid #6ee7b7;border-radius:10px;margin-bottom:14px;align-items:center">
+        <span style="font-size:13px;font-weight:700;color:var(--green)">✅ BRASPRESS · API Oficial</span>
+        <span style="font-size:12px;color:var(--green)">Recotação automática ativa — nenhuma sessão necessária.</span>
       </div>
 
       <div class="drop-zone" id="drop-zone"
@@ -333,7 +332,7 @@ main { flex:1; padding:28px 20px; max-width:1400px; margin:0 auto; width:100%; }
 const PROXY = window.location.origin;
 const TOLERANCIA = 0.10;
 let dados = [];
-let bpJsessionid = null;
+let bpJsessionid = 'API_OFICIAL'; // BRASPRESS via API oficial
 let alertasGlobais = [];
 
 // ── MAPA DE LOJAS GVR ──
@@ -370,25 +369,8 @@ function switchTab(id, el) {
   document.getElementById('tab-'+id).classList.add('active');
 }
 
-// ── SESSÃO BRASPRESS ──
-function ativarSessao() {
-  const val = document.getElementById('bp-jsessionid').value.trim();
-  if (!val) { alert('Cole o JSESSIONID da BRASPRESS.\n\nF12 → Application → Cookies → blue.braspress.com → JSESSIONID'); return; }
-  bpJsessionid = val;
-  const box = document.getElementById('session-box');
-  box.classList.add('active');
-  document.getElementById('bp-status').textContent  = '✅ Ativo';
-  document.getElementById('bp-status').style.color  = 'var(--green)';
-  const pendentes = dados.filter(d=>d.transportadora==='BRASPRESS' && d.status==='sem-sessao');
-  if (pendentes.length > 0) {
-    document.getElementById('overlay').style.display='flex';
-    document.getElementById('overlay-msg').textContent=`Recotando ${pendentes.length} CT-e(s) BRASPRESS...`;
-    Promise.all(pendentes.map(d=>recotar(d))).then(()=>{
-      document.getElementById('overlay').style.display='none';
-      atualizarKPIs();
-    });
-  }
-}
+// ── BRASPRESS — API Oficial ──
+// Recotação automática sem JSESSIONID
 
 // ── DRAG & DROP ──
 function onDragOver(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); }
@@ -589,10 +571,7 @@ async function recotar(cte) {
     return;
   }
 
-  if (cte.transportadora==='BRASPRESS' && !bpJsessionid) {
-    cte.status='sem-sessao'; cte.erroMsg='Ative a sessão BRASPRESS acima';
-    atualizarLinha(cte); return;
-  }
+  // BRASPRESS via API oficial — sempre recota automaticamente
   try {
     const pesoReal   = cte.pesoDeclarado || cte.pesoCubado || 1;
     const pesoCubado = cte.metrosCubicos > 0
@@ -615,9 +594,9 @@ async function recotar(cte) {
     };
 
     let body = {};
-    if (cte.transportadora==='JAMEF')      body = {jamef: campos};
-    else if (cte.transportadora==='BRASPRESS') body = {braspress:{jsessionid:bpJsessionid,...campos}};
-    else body = {jamef: campos};
+    if (cte.transportadora==='JAMEF')          body = {jamef: campos};
+    else if (cte.transportadora==='BRASPRESS') body = {braspress: campos};
+    else                                        body = {jamef: campos};
 
     const resp   = await fetch(`${PROXY}/api/cotacao`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const result = await resp.json();
@@ -834,19 +813,25 @@ function verDetalhe(id) {
 function fecharModal(e){if(!e||e.target===document.getElementById('modal-bg'))document.getElementById('modal-bg').classList.remove('open');}
 
 // ── EXPORTAR AUDITORIA XLSX ──
+// Formata número para padrão BR (vírgula decimal) no Excel
+function numBR(v, dec=2) {
+  if (v == null || v === '' || isNaN(v)) return '';
+  return Number(v).toLocaleString('pt-BR', {minimumFractionDigits: dec, maximumFractionDigits: dec});
+}
+
 function exportarAuditoriaXLSX() {
   if(!dados.length) return;
   const wb=XLSX.utils.book_new();
   const hdrs=['Emissor DACTe','Nº DACTe','Data Emissão','Vl. NF (R$)','Peso (kg)','Volumes','Remetente','Cidade Rem.','UF Rem.','Destinatário','Cidade Dest.','UF Dest.','NF-e(s)','Vl. Frete (R$)','Recotado (R$)','Diverg R$','Diverg %','Status'];
   const rows=[hdrs,...dados.map(d=>[
     d.transportadora, d.nCT, d.data,
-    d.valorMercadoria?.toFixed(2)||'',
-    d.pesoCobrado?.toFixed(3)||'', d.volumes,
+    numBR(d.valorMercadoria),
+    numBR(d.pesoCobrado, 3), d.volumes,
     d.nomeRem, d.munOrigem, d.ufOrigem,
     d.nomeDest, d.munDestino, d.ufDestino,
-    d.nfes, d.vTPrest?.toFixed(2)||'',
-    d.valorCotado?.toFixed(2)||'',
-    d.divR?.toFixed(2)||'', d.divP?.toFixed(2)||'', d.status
+    d.nfes, numBR(d.vTPrest),
+    numBR(d.valorCotado),
+    numBR(d.divR), numBR(d.divP), d.status
   ])];
   const ws=XLSX.utils.aoa_to_sheet(rows);
   ws['!cols']=[20,10,12,14,10,8,28,18,6,28,18,6,20,14,14,12,10,12].map(w=>({wch:w}));
@@ -867,13 +852,13 @@ function exportarConsolidadoXLSX() {
         g.nomeRem, fmtCNPJ(g.cnpjRem),
         g.nomeDest, fmtCNPJ(g.cnpjDest),
         c.nCT, c.nfes,
-        c.vFrete?.toFixed(2)||'', c.valorMercadoria?.toFixed(2)||'',
-        c.pesoCobrado?.toFixed(3)||'', c.volumes||'',
+        numBR(c.vFrete), numBR(c.valorMercadoria),
+        numBR(c.pesoCobrado, 3), c.volumes||'',
         'Frete não consolidado — mesmo remetente, destinatário, data e transportadora'
       ]);
     });
     rows.push(['TOTAL','','','','','','','',
-      g.totalFrete.toFixed(2),'','','','']);
+      numBR(g.totalFrete),'','','','']);
     rows.push([]);
   });
   const ws=XLSX.utils.aoa_to_sheet(rows);
@@ -882,11 +867,11 @@ function exportarConsolidadoXLSX() {
 
   const rsm=[['RESUMO — FRETES NÃO CONSOLIDADOS'],[''],
     ['Transportadora','Data','Remetente','Destinatário','Qtd CT-es','Total Frete R$']];
-  alertasGlobais.forEach(g=>rsm.push([g.nomeEmitFull,g.data,g.nomeRem,g.nomeDest,g.ctes.length,g.totalFrete.toFixed(2)]));
+  alertasGlobais.forEach(g=>rsm.push([g.nomeEmitFull,g.data,g.nomeRem,g.nomeDest,g.ctes.length,numBR(g.totalFrete)]));
   rsm.push([],
     ['Total de grupos', alertasGlobais.length],
     ['Total de CT-es',  alertasGlobais.reduce((s,g)=>s+g.ctes.length,0)],
-    ['Total em frete',  alertasGlobais.reduce((s,g)=>s+g.totalFrete,0).toFixed(2)],
+    ['Total em frete',  numBR(alertasGlobais.reduce((s,g)=>s+g.totalFrete,0))],
     ['Gerado em', new Date().toLocaleString('pt-BR')]);
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rsm),'Resumo Contestação');
   XLSX.writeFile(wb,`contestacao_nao_consolidados_${new Date().toISOString().slice(0,10)}.xlsx`);
@@ -1056,5 +1041,8 @@ function limpar() {
   atualizarKPIs();
 }
 </script>
+<footer>
+  Desenvolvido por <strong>Diego Santos</strong> · GVR Home / Trousseau · TMS v3.0
+</footer>
 </body>
 </html>
