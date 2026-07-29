@@ -459,24 +459,32 @@ function buscarMovvi(cidadeOrig, ufOrig, cidadeDest, ufDest, valorNF) {
     return { status: 'nao_atendido' };
   }
 
-  // Busca registro — usa cidade de destino como referência (tabela é de SP para X, mas é bidirecional)
-  // Para rotas que não passam por SP, busca o destino e depois a origem
+  // Tabela bidirecional — busca cidade destino e cidade origem na tabela
+  // A tabela tem São Paulo como referência, mas vale nos dois sentidos
   const buscar = (nome) => tabela.find(r => normCidade(r.cidade) === nome);
   const regDest = buscar(nDest);
   const regOrig = buscar(nOrig);
 
-  // Usa o registro encontrado (destino tem prioridade, depois origem)
+  // Ambas as cidades precisam estar na tabela OU uma delas precisa ser São Paulo
+  // Regra: se destino não está cadastrado → alerta para cadastrar destino
+  //        se origem não está cadastrada  → alerta para cadastrar origem
+  //        só calcula quando pelo menos uma das cidades está na tabela
+  //        (tabela é referência SP↔X, então basta uma das cidades estar cadastrada)
   const reg = regDest || regOrig;
 
   if (!reg) {
-    // UF atendida mas cidade não cadastrada
-    const cidadeNaoCadastrada = !regDest ? cidadeDest : cidadeOrig;
-    const ufNaoCadastrada     = !regDest ? ufDest : ufOrig;
-    return { status: 'cidade_nao_cadastrada', cidade: cidadeNaoCadastrada, uf: ufNaoCadastrada };
+    // Nenhuma das cidades está cadastrada — pede a cidade de destino
+    return { status: 'cidade_nao_cadastrada', cidade: cidadeDest, uf: ufDest };
   }
 
-  const porPct   = parseFloat((valorNF * reg.pct / 100).toFixed(2));
-  const valorFinal = Math.max(porPct, reg.min);
+  // Se tem as duas, usa a que tem o maior frete (mais conservador)
+  // Se tem só uma, usa ela (tabela bidirecional)
+  const regFinal = (regDest && regOrig)
+    ? (regDest.min >= regOrig.min ? regDest : regOrig)
+    : reg;
+
+  const porPct   = parseFloat((valorNF * regFinal.pct / 100).toFixed(2));
+  const valorFinal = Math.max(porPct, regFinal.min);
 
   return {
     status: 'ok',
@@ -487,10 +495,10 @@ function buscarMovvi(cidadeOrig, ufOrig, cidadeDest, ufDest, valorNF) {
     valorTotal:     valorFinal,
     prazoEntrega:   null,
     pesoCobrado:    null,
-    freteMinimo:    reg.min,
-    pctAplicado:    reg.pct,
+    freteMinimo:    regFinal.min,
+    pctAplicado:    regFinal.pct,
     valorPorPct:    porPct,
-    regraAplicada:  valorFinal === porPct ? `${reg.pct}% × NF` : `Mínimo R$ ${reg.min.toFixed(2)}`,
+    regraAplicada:  valorFinal === porPct ? `${regFinal.pct}% × NF` : `Mínimo R$ ${regFinal.min.toFixed(2)}`,
   };
 }
 

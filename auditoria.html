@@ -535,17 +535,23 @@ function cotarMovvi(cte) {
 
   if (!UFS_MOVVI.has(ufOrig) || !UFS_MOVVI.has(ufDest)) return null;
 
-  const reg = tabela.find(r => normCidadeAud(r.cidade) === nDest)
-           || tabela.find(r => normCidadeAud(r.cidade) === nOrig);
+  const regDest = tabela.find(r => normCidadeAud(r.cidade) === nDest);
+  const regOrig = tabela.find(r => normCidadeAud(r.cidade) === nOrig);
+  const reg = regDest || regOrig;
   if (!reg) return null;
 
-  const porPct    = parseFloat((cte.valorMercadoria * reg.pct / 100).toFixed(2));
-  const valorFinal = Math.max(porPct, reg.min);
+  // Se tem as duas cidades, usa a que tem maior frete (mais conservador)
+  const regFinal = (regDest && regOrig)
+    ? (regDest.min >= regOrig.min ? regDest : regOrig)
+    : reg;
+
+  const porPct    = parseFloat((cte.valorMercadoria * regFinal.pct / 100).toFixed(2));
+  const valorFinal = Math.max(porPct, regFinal.min);
   return {
     transportadora:'MOVVI', numeroCotacao:'—',
     valorFrete:valorFinal, valorTotal:valorFinal, valorImpostos:null,
     prazoEntrega:null, pesoCobrado:null,
-    regraAplicada: valorFinal===porPct ? `${reg.pct}% × NF` : `Mínimo R$ ${reg.min.toFixed(2)}`,
+    regraAplicada: valorFinal===porPct ? `${regFinal.pct}% × NF` : `Mínimo R$ ${regFinal.min.toFixed(2)}`,
   };
 }
 
@@ -600,7 +606,8 @@ async function recotar(cte) {
 
     const resp   = await fetch(`${PROXY}/api/cotacao`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const result = await resp.json();
-    const cotacao = result.resultados?.find(r=>r.transportadora===cte.transportadora) || result.resultados?.[0];
+    // Busca SOMENTE o resultado da transportadora correta — sem fallback para evitar confusão entre transportadoras
+    const cotacao = result.resultados?.find(r => r.transportadora === cte.transportadora) || null;
 
     if (cotacao?.valorTotal != null) {
       cte.valorCotado = cotacao.valorTotal;
