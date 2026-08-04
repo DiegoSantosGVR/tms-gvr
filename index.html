@@ -67,7 +67,7 @@
   .alert-warning { background: var(--amber-bg); border: 1px solid var(--orange-border); color: var(--amber); }
 
   /* CREDENCIAIS — 3 colunas */
-  .cred-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .cred-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
   .cred-box { border: 1.5px solid var(--gray-200); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
   .cred-title { font-size: 13px; font-weight: 700; color: var(--gray-800); display: flex; align-items: center; gap: 8px; }
   .cred-status { width: 8px; height: 8px; border-radius: 50%; background: var(--gray-200); flex-shrink: 0; }
@@ -79,7 +79,7 @@
 
   /* RESULTADOS */
   #resultado { display: none; margin-bottom: 20px; }
-  .compare-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .compare-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
   .compare-card { border-radius: 10px; border: 2px solid var(--gray-200); overflow: hidden; }
   .compare-card.melhor { border-color: var(--green); }
   .compare-card.nao-atendido { opacity: .6; }
@@ -87,6 +87,8 @@
   .compare-header.jamef     { background: #E8F0FA; color: var(--blue); }
   .compare-header.braspress { background: #FFF0F2; color: var(--red); }
   .compare-header.movvi     { background: #FFF8E7; color: #7c4a00; }
+  .compare-header.airsupply { background: #F0F4FF; color: #1e3a8a; }
+  .compare-row .val.blue-val { color: #1e3a8a; font-size: 18px; }
   .compare-body { padding: 16px; background: #fff; }
   .compare-row { display: flex; justify-content: space-between; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--gray-100); font-size: 13px; }
   .compare-row:last-child { border-bottom: none; }
@@ -160,6 +162,7 @@
     <span class="badge badge-green">JAMEF ✅</span>
     <span class="badge badge-green">MOVVI ✅</span>
     <span class="badge badge-green">BRASPRESS ✅</span>
+    <span class="badge badge-green">AIRSUPPLY ✅</span>
     <a href="/auditoria" class="nav-audit">🔍 Auditoria CT-e</a>
     <button id="btn-logout" onclick="logout()">Sair</button>
   </div>
@@ -209,7 +212,7 @@
   <div id="screen-login">
     <div class="login-header">
       <div class="mark">TMS GVR</div>
-      <div class="sub">Sistema de cotação de frete — JAMEF · MOVVI · BRASPRESS</div>
+      <div class="sub">Sistema de cotação de frete — JAMEF · MOVVI · BRASPRESS · AIRSUPPLY</div>
       <div style="font-size:11px;color:var(--gray-400);margin-top:6px">Desenvolvido por Diego Santos · GVR Home</div>
     </div>
     <div class="card">
@@ -239,6 +242,14 @@
               <div class="cred-status ok"></div>BRASPRESS
             </div>
             <div class="cred-msg">✅ API oficial BRASPRESS configurada.<br>Nenhum login necessário.</div>
+          </div>
+
+          <!-- AIRSUPPLY -->
+          <div class="cred-box">
+            <div class="cred-title">
+              <div class="cred-status ok"></div>AIRSUPPLY
+            </div>
+            <div class="cred-msg">✅ API AirSupply configurada.<br>Nenhum login necessário.</div>
           </div>
 
         </div>
@@ -283,89 +294,79 @@
     <div class="card">
       <div class="card-header blue">📦 Dados da cotação</div>
       <div class="card-body">
-        <div class="tabs">
-          <div class="tab active" onclick="switchTab('rota',this)">Rota e destinatário</div>
-          <div class="tab" onclick="switchTab('carga',this)">Carga e caixas</div>
-        </div>
-
-        <!-- ABA ROTA -->
-        <div class="tab-content active" id="tab-rota">
-          <div class="section-label">CEP origem e destino</div>
-          <div class="form-grid g2" style="margin-top:8px">
-            <div class="field">
-              <label>CEP origem</label>
-              <input type="text" id="f-cep-orig" placeholder="00000-000" class="mono" oninput="this.value=fmtCEP(this.value);buscarCidadeCEP('orig')" maxlength="9">
-              <div class="field-hint" id="hint-orig"></div>
-            </div>
-            <div class="field">
-              <label>CEP destino</label>
-              <input type="text" id="f-cep-dest" placeholder="00000-000" class="mono" oninput="this.value=fmtCEP(this.value);buscarCidadeCEP('dest')" maxlength="9">
-              <div class="field-hint" id="hint-dest"></div>
-            </div>
+        <!-- FORMULÁRIO UNIFICADO — sem abas -->
+        <div class="section-label">Rota</div>
+        <div class="form-grid g2" style="margin-top:8px">
+          <div class="field">
+            <label>CEP origem</label>
+            <input type="text" id="f-cep-orig" placeholder="00000-000" class="mono" oninput="this.value=fmtCEP(this.value);buscarCidadeCEP('orig')" maxlength="9">
+            <div class="field-hint" id="hint-orig"></div>
           </div>
-          <div class="section-label" style="margin-top:8px">Destinatário</div>
-          <div class="form-grid g2" style="margin-top:8px">
-            <div class="field">
-              <label>CNPJ / CPF destinatário</label>
-              <input type="text" id="f-dest-cnpj" placeholder="00.000.000/0000-00" class="mono" oninput="this.value=fmtCNPJ(this.value)">
-            </div>
-            <div class="field">
-              <label>Tipo de frete</label>
-              <select id="f-tipo-frete">
-                <option value="1">CIF — por conta do remetente</option>
-                <option value="2">FOB — por conta do destinatário</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-grid g2" style="margin-top:14px">
-            <div class="field">
-              <label>Valor da mercadoria (R$)</label>
-              <input type="number" id="f-valor" placeholder="0.00" step="0.01">
-            </div>
-            <div class="field">
-              <label>Peso real total (kg)</label>
-              <input type="number" id="f-peso" placeholder="0.00" step="0.01" oninput="atualizarResumo()">
-              <div class="field-hint">Peso total de todos os volumes</div>
-            </div>
+          <div class="field">
+            <label>CEP destino</label>
+            <input type="text" id="f-cep-dest" placeholder="00000-000" class="mono" oninput="this.value=fmtCEP(this.value);buscarCidadeCEP('dest')" maxlength="9">
+            <div class="field-hint" id="hint-dest"></div>
           </div>
         </div>
 
-        <!-- ABA CARGA -->
-        <div class="tab-content" id="tab-carga">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-            <div class="section-label" style="padding:0;border:none;margin:0">Caixas e dimensões (metros)</div>
-            <button class="btn btn-outline btn-sm" onclick="adicionarCaixa()" style="gap:6px">＋ Adicionar caixa</button>
+        <div class="section-label" style="margin-top:14px">Destinatário e nota fiscal</div>
+        <div class="form-grid g2" style="margin-top:8px">
+          <div class="field">
+            <label>CNPJ / CPF destinatário</label>
+            <input type="text" id="f-dest-cnpj" placeholder="00.000.000/0000-00" class="mono" oninput="this.value=fmtCNPJ(this.value)">
           </div>
-          <table class="caixas-table">
-            <thead><tr>
-              <th>#</th><th>Qtd. volumes</th><th>Comprimento (m)</th>
-              <th>Largura (m)</th><th>Altura (m)</th><th>Cubagem (m³)</th><th></th>
-            </tr></thead>
-            <tbody id="caixas-tbody"></tbody>
-          </table>
-          <div class="caixas-resumo" id="caixas-resumo">
-            <div><span>Total volumes:</span> <strong id="res-volumes">0</strong></div>
-            <div><span>Cubagem total:</span> <strong id="res-cubagem">0,000 m³</strong></div>
-            <div><span>Peso cubado (fator 300):</span> <strong id="res-pcubado">0,00 kg</strong></div>
-            <div><span>Peso cobrado:</span> <strong id="res-pcobrado">—</strong></div>
+          <div class="field">
+            <label>Tipo de frete</label>
+            <select id="f-tipo-frete">
+              <option value="1">CIF — por conta do remetente</option>
+              <option value="2">FOB — por conta do destinatário</option>
+            </select>
           </div>
-          <div class="form-grid g2" style="margin-top:14px">
-            <div class="field">
-              <label>Embalagem</label>
-              <select id="f-embalagem">
-                <option value="CX">CX — Caixa</option>
-                <option value="VL">VL — Volume</option>
-                <option value="PC">PC — Peça</option>
-                <option value="FD">FD — Fardo</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>Modal</label>
-              <select id="f-modal">
-                <option value="R">Rodoviário</option>
-                <option value="A">Aéreo</option>
-              </select>
-            </div>
+          <div class="field">
+            <label>Valor da mercadoria (R$)</label>
+            <input type="number" id="f-valor" placeholder="0.00" step="0.01">
+          </div>
+          <div class="field">
+            <label>Peso real total (kg)</label>
+            <input type="number" id="f-peso" placeholder="0.00" step="0.01" oninput="atualizarResumo()">
+            <div class="field-hint">Peso total de todos os volumes</div>
+          </div>
+        </div>
+
+        <div class="section-label" style="margin-top:14px">Caixas e dimensões (metros)</div>
+        <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+          <button class="btn btn-outline btn-sm" onclick="adicionarCaixa()">＋ Adicionar caixa</button>
+        </div>
+        <table class="caixas-table">
+          <thead><tr>
+            <th>#</th><th>Qtd. volumes</th><th>Comprimento (m)</th>
+            <th>Largura (m)</th><th>Altura (m)</th><th>Cubagem (m³)</th><th></th>
+          </tr></thead>
+          <tbody id="caixas-tbody"></tbody>
+        </table>
+        <div class="caixas-resumo" id="caixas-resumo">
+          <div><span>Total volumes:</span> <strong id="res-volumes">0</strong></div>
+          <div><span>Cubagem total:</span> <strong id="res-cubagem">0,000 m³</strong></div>
+          <div><span>Peso cubado (fator 300):</span> <strong id="res-pcubado">0,00 kg</strong></div>
+          <div><span>Peso cobrado:</span> <strong id="res-pcobrado">—</strong></div>
+        </div>
+
+        <div class="form-grid g2" style="margin-top:14px">
+          <div class="field">
+            <label>Embalagem</label>
+            <select id="f-embalagem">
+              <option value="CX">CX — Caixa</option>
+              <option value="VL">VL — Volume</option>
+              <option value="PC">PC — Peça</option>
+              <option value="FD">FD — Fardo</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Modal</label>
+            <select id="f-modal">
+              <option value="R">Rodoviário</option>
+              <option value="A">Aéreo</option>
+            </select>
           </div>
         </div>
 
@@ -373,7 +374,7 @@
         <div style="margin-top:20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
           <button class="btn btn-primary" onclick="fazerCotacao()" id="btn-cotar" style="min-width:260px">
             <div class="spinner" id="spin-cotar"></div>
-            <span id="btn-cotar-txt">🔍 Cotar JAMEF + MOVVI + BRASPRESS</span>
+            <span id="btn-cotar-txt">🔍 Cotar JAMEF · MOVVI · BRASPRESS · AIRSUPPLY</span>
           </button>
           <button class="btn btn-outline btn-sm" onclick="limpar()">Limpar</button>
         </div>
@@ -558,7 +559,7 @@ function hideAlert(id){document.getElementById(id).style.display='none';}
 function fmtCNPJ(v){const d=v.replace(/\D/g,'').slice(0,14);if(d.length<=2)return d;if(d.length<=5)return d.slice(0,2)+'.'+d.slice(2);if(d.length<=8)return d.slice(0,2)+'.'+d.slice(2,5)+'.'+d.slice(5);if(d.length<=12)return d.slice(0,2)+'.'+d.slice(2,5)+'.'+d.slice(5,8)+'/'+d.slice(8);return d.slice(0,2)+'.'+d.slice(2,5)+'.'+d.slice(5,8)+'/'+d.slice(8,12)+'-'+d.slice(12);}
 function fmtCEP(v){const d=v.replace(/\D/g,'').slice(0,8);return d.length<=5?d:d.slice(0,5)+'-'+d.slice(5);}
 function limparNum(v){return String(v).replace(/\D/g,'');}
-function switchTab(id,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));el.classList.add('active');document.getElementById('tab-'+id).classList.add('active');}
+// switchTab removido — formulário unificado sem abas
 function formatarData(d){if(!d)return'—';if(typeof d==='string'&&d.match(/^\d{2}\/\d{2}\/\d{4}$/))return d;if(typeof d==='string'&&d.match(/^\d{8}$/))return d.slice(6)+'/'+d.slice(4,6)+'/'+d.slice(0,4);try{const dt=new Date(d);if(!isNaN(dt))return dt.toLocaleDateString('pt-BR');}catch{}return String(d);}
 
 // ── CAIXAS ──
@@ -687,7 +688,7 @@ async function fazerCotacao(){
   } finally{
     stopLoading();
     document.getElementById('spin-cotar').style.display='none';
-    document.getElementById('btn-cotar-txt').textContent='🔍 Cotar JAMEF + MOVVI + BRASPRESS';
+    document.getElementById('btn-cotar-txt').textContent='🔍 Cotar JAMEF · MOVVI · BRASPRESS · AIRSUPPLY';
     document.getElementById('btn-cotar').disabled=false;
   }
 }
@@ -700,8 +701,8 @@ function exibirComparacao(data,valorNF){
   const melhor=comValor[0]?.transportadora;
   const economia=comValor.length>=2?comValor[comValor.length-1].valorTotal-comValor[0].valorTotal:null;
 
-  const TRANSP_ORDER = ['JAMEF','MOVVI','BRASPRESS'];
-  const COR_VAL = {JAMEF:'green', MOVVI:'org-val', BRASPRESS:'red-val'};
+  const TRANSP_ORDER = ['JAMEF','MOVVI','BRASPRESS','AIRSUPPLY'];
+  const COR_VAL = {JAMEF:'green', MOVVI:'org-val', BRASPRESS:'red-val', AIRSUPPLY:'blue-val'};
 
   TRANSP_ORDER.forEach(nome=>{
     const r=resultados.find(x=>x.transportadora===nome);

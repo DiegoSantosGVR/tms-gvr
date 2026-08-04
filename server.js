@@ -454,6 +454,104 @@ async function jamefCotacao(campos) {
 
 
 
+// ─────────────────────────────────────────────
+// CONFIGURAÇÃO API AIRSUPPLY
+// ─────────────────────────────────────────────
+const AIRSUPPLY_API = {
+  host:       'airsupply.eslcloud.com.br',
+  path:       '/api/quote/calculate_freights',
+  token:      '946fbfc91b880aca2eaa9ee5c9651748',
+  cnpjRem:    '66934555001514',
+  tabelaNome: 'GVR TROUSSEAU - RODO - ORIGEM SAO', // nome parcial da tabela de preço
+  _lastCall:  0, // controle de rate limit (2s entre chamadas)
+};
+
+async function airsupplyCotacao(campos) {
+  // Rate limit: aguarda 2 segundos entre chamadas
+  const agora = Date.now();
+  const diff  = agora - AIRSUPPLY_API._lastCall;
+  if (diff < 2000) await new Promise(r => setTimeout(r, 2000 - diff));
+  AIRSUPPLY_API._lastCall = Date.now();
+
+  const cepOrig = String(campos.cepOrigem).replace(/\D/g,'');
+  const cepDest = String(campos.cepDestino).replace(/\D/g,'');
+
+  // Formata CEP com hífen (padrão da API: "13600-690")
+  const fmtCEP = c => c.length === 8 ? c.slice(0,5)+'-'+c.slice(5) : c;
+
+  const pesoReal    = Number(campos.pesoReal);
+  const pesoCubado  = Number(campos.pesoCubado ?? pesoReal);
+  const pesoCobrado = Math.max(pesoReal, pesoCubado);
+
+  const payload = JSON.stringify({
+    data: {
+      attributes: {
+        origin_postal_code:      fmtCEP(cepOrig),
+        destination_postal_code: fmtCEP(cepDest),
+        real_weight:             pesoCobrado,
+        invoices_value:          Number(campos.valorMercadoria),
+        invoices_volumes:        Number(campos.qtdVolumes) || 1,
+        sender_document:         AIRSUPPLY_API.cnpjRem,
+        recipient_document:      String(campos.cnpjDestinatario).replace(/\D/g,''),
+        // modal não enviado = rodoviário por padrão
+      }
+    }
+  });
+
+  console.log('[AIRSUPPLY] Payload:', payload);
+
+  const result = await httpsRequest({
+    hostname: AIRSUPPLY_API.host,
+    path:     AIRSUPPLY_API.path,
+    method:   'GET',
+    headers: {
+      'Authorization': `Token ${AIRSUPPLY_API.token}`,
+      'Content-Type':  'application/json',
+      'Accept':        'application/json',
+      'Content-Length': Buffer.byteLength(payload),
+    }
+  }, payload);
+
+  console.log('[AIRSUPPLY] Status:', result.status, 'Body:', result.body.slice(0, 300));
+
+  let data;
+  try { data = JSON.parse(result.body); }
+  catch { throw new Error(`AirSupply retornou resposta inválida (status ${result.status})`); }
+
+  if (result.status === 429) throw new Error('AirSupply: limite de requisições atingido. Aguarde 2 segundos e tente novamente.');
+  if (result.status >= 400) throw new Error(data.message || data.error || `Erro ${result.status} AirSupply`);
+
+  // Busca a tabela GVR — usa nome parcial para match flexível
+  const lista = data.data || [];
+  const nomeAlvo = AIRSUPPLY_API.tabelaNome.toLowerCase();
+  const item = lista.find(i =>
+    (i.summary?.customer_price_table || '').toLowerCase().includes(nomeAlvo)
+  ) || lista[0]; // fallback para o primeiro se não encontrar
+
+  if (!item) throw new Error('AirSupply: nenhuma tabela de preço retornada.');
+
+  const valorTotal  = parseFloat(item.summary?.total || '0');
+  const prazo       = item.details?.delivery_time ?? null;
+  const prazoFmt    = prazo ? `${prazo} dias úteis` : null;
+  const tabelaNome  = item.summary?.customer_price_table || '—';
+
+  // Componentes para detalhe
+  const d = item.details || {};
+
+  return {
+    transportadora: 'AIRSUPPLY',
+    numeroCotacao:  '—',
+    valorFrete:     parseFloat(d.freight_weight_subtotal || '0'),
+    valorImpostos:  parseFloat(d.tax_total || '0'),
+    valorTotal,
+    prazoEntrega:   prazoFmt,
+    diasUteis:      prazo,
+    pesoReal, pesoCubado, pesoCobrado,
+    tabelaNome,
+    raw: item,
+  };
+}
+
 // ═══════════════════════════════════════════════════════════════
 //  ██  BRASPRESS
 // ═══════════════════════════════════════════════════════════════
@@ -647,7 +745,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === 'GET' && pathname === '/health') {
-    return json(res, 200, { status: 'ok', versao: '3.0.0', transportadoras: ['JAMEF ✅', 'BRASPRESS API ✅', 'MOVVI ✅'] });
+    return json(res, 200, { status: 'ok', versao: '3.1.0', transportadoras: ['JAMEF ✅', 'BRASPRESS API ✅', 'MOVVI ✅', 'AIRSUPPLY ✅'] });
   }
 
   // Rotas GET especiais
@@ -681,9 +779,11 @@ const server = http.createServer(async (req, res) => {
     // COTAÇÃO COMBINADA
     if (pathname === '/api/cotacao') {
       const promessas = [];
-      if (body.jamef)     promessas.push(jamefCotacao(body.jamef).catch(e => ({ _erro: true, transportadora: 'JAMEF',     erro: e.message })));
+      if (body.jamef)      promessas.push(jamefCotacao(body.jamef).catch(e => ({ _erro: true, transportadora: 'JAMEF',     erro: e.message })));
       // BRASPRESS agora usa API oficial — sempre inclui na cotação
       promessas.push(braspressCotacao(body.braspress || body.jamef || {}).catch(e => ({ _erro: true, transportadora: 'BRASPRESS', erro: e.message })));
+      // AIRSUPPLY — sempre inclui na cotação
+      promessas.push(airsupplyCotacao(body.airsupply || body.jamef || {}).catch(e => ({ _erro: true, transportadora: 'AIRSUPPLY', erro: e.message })));
       const todos     = await Promise.all(promessas);
       const resultados = todos.filter(r => !r._erro);
       const erros      = todos.filter(r =>  r._erro).map(({ _erro, ...rest }) => rest);
