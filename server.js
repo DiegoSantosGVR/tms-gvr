@@ -503,7 +503,7 @@ async function airsupplyCotacao(campos) {
   const result = await httpsRequest({
     hostname: AIRSUPPLY_API.host,
     path:     AIRSUPPLY_API.path,
-    method:   'GET',
+    method:   'POST',
     headers: {
       'Authorization': `Token ${AIRSUPPLY_API.token}`,
       'Content-Type':  'application/json',

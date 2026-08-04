@@ -426,7 +426,7 @@ async function cotarAirSupply(campos) {
   };
 
   const resp = await fetch(AIRSUPPLY_CFG.url, {
-    method:  'GET',
+    method:  'POST',
     headers: {
       'Authorization': `Token ${AIRSUPPLY_CFG.token}`,
       'Content-Type':  'application/json',
