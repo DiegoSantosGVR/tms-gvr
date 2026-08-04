@@ -460,7 +460,7 @@ async function jamefCotacao(campos) {
 const AIRSUPPLY_API = {
   host:       'airsupply.eslcloud.com.br',
   path:       '/api/quote/calculate_freights',
-  token:      '946fbfc91b880aca2eaa9ee5c9651748',
+  token:      '3fe768d09b55efafd18a5d40f8bf40eb',
   cnpjRem:    '66934555001514',
   tabelaNome: 'GVR TROUSSEAU - RODO - ORIGEM SAO', // nome parcial da tabela de preço
   _lastCall:  0, // controle de rate limit (2s entre chamadas)
