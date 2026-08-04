@@ -390,6 +390,79 @@ let sess = { jamef: { ready: true }, braspress: { ready: true } };
 let caixaIdCounter = 0;
 let _pendingMovviCotacao = null; // guarda os campos enquanto aguarda cadastro
 
+// ── AIRSUPPLY — chamada client-side ──
+const AIRSUPPLY_CFG = {
+  url:        'https://airsupply.eslcloud.com.br/api/quote/calculate_freights',
+  token:      '3fe768d09b55efafd18a5d40f8bf40eb',
+  cnpjRem:    '66934555001514',
+  tabelaNome: 'GVR TROUSSEAU - RODO - ORIGEM SAO',
+  _lastCall:  0,
+};
+
+async function cotarAirSupply(campos) {
+  // Rate limit 2s
+  const agora = Date.now();
+  const diff  = agora - AIRSUPPLY_CFG._lastCall;
+  if (diff < 2000) await new Promise(r => setTimeout(r, 2000 - diff));
+  AIRSUPPLY_CFG._lastCall = Date.now();
+
+  const fmtCEP = c => { const d = String(c).replace(/\D/g,''); return d.length===8 ? d.slice(0,5)+'-'+d.slice(5) : d; };
+  const pesoReal    = Number(campos.pesoReal);
+  const pesoCubado  = Number(campos.pesoCubado ?? pesoReal);
+  const pesoCobrado = Math.max(pesoReal, pesoCubado);
+
+  const payload = {
+    data: {
+      attributes: {
+        origin_postal_code:      fmtCEP(campos.cepOrigem),
+        destination_postal_code: fmtCEP(campos.cepDestino),
+        real_weight:             pesoCobrado,
+        invoices_value:          Number(campos.valorMercadoria),
+        invoices_volumes:        Number(campos.qtdVolumes) || 1,
+        sender_document:         AIRSUPPLY_CFG.cnpjRem,
+        recipient_document:      String(campos.cnpjDestinatario).replace(/\D/g,''),
+      }
+    }
+  };
+
+  const resp = await fetch(AIRSUPPLY_CFG.url, {
+    method:  'GET',
+    headers: {
+      'Authorization': `Token ${AIRSUPPLY_CFG.token}`,
+      'Content-Type':  'application/json',
+      'Accept':        'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (resp.status === 429) throw new Error('AirSupply: limite de requisições. Aguarde 2 segundos.');
+  if (!resp.ok) throw new Error(`Erro ${resp.status} AirSupply`);
+
+  const data  = await resp.json();
+  const lista = data.data || [];
+  const nomeAlvo = AIRSUPPLY_CFG.tabelaNome.toLowerCase();
+  const item  = lista.find(i => (i.summary?.customer_price_table||'').toLowerCase().includes(nomeAlvo))
+             || lista[0];
+
+  if (!item) throw new Error('AirSupply: nenhuma tabela de preço retornada.');
+
+  const valorTotal = parseFloat(item.summary?.total || '0');
+  const prazo      = item.details?.delivery_time ?? null;
+  const d          = item.details || {};
+
+  return {
+    transportadora: 'AIRSUPPLY',
+    numeroCotacao:  '—',
+    valorFrete:     parseFloat(d.freight_weight_subtotal || '0'),
+    valorImpostos:  parseFloat(d.tax_total || '0'),
+    valorTotal,
+    prazoEntrega:   prazo ? `${prazo} dias úteis` : null,
+    diasUteis:      prazo,
+    tabelaNome:     item.summary?.customer_price_table || '—',
+    raw:            item,
+  };
+}
+
 // ── TABELA MOVVI (localStorage) ──
 const LS_MOVVI = 'tms_movvi_tabela';
 const UFS_ATENDIDAS = new Set(['SP','RJ','MG','PR','RS','ES','SC']);
@@ -667,9 +740,11 @@ async function fazerCotacao(){
   loading('Consultando JAMEF, MOVVI e BRASPRESS...');
 
   try {
-    const body={jamef:campos};
-    if(sess.braspress.jsessionid)body.braspress={jsessionid:sess.braspress.jsessionid,...campos};
-    const resp=await fetch(`${PROXY}/api/cotacao`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const body={jamef:campos, braspress:campos};
+    const [resp, airResult] = await Promise.all([
+      fetch(`${PROXY}/api/cotacao`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}),
+      cotarAirSupply(campos).catch(e => ({ _erro: true, transportadora: 'AIRSUPPLY', erro: e.message })),
+    ]);
     const data=await resp.json();
     if(!resp.ok)throw new Error(data.erro||`Erro ${resp.status}`);
 
@@ -680,6 +755,15 @@ async function fazerCotacao(){
     } else if (movviResult?.status === 'nao_atendido' || movviResult?.status === 'sem_cidade') {
       data.erros = data.erros || [];
       data.erros.push({transportadora:'MOVVI', erro: movviResult.status==='nao_atendido' ? 'Região não atendida pela Movvi' : 'Informe o CEP corretamente para cotar a Movvi'});
+    }
+
+    // Injeta resultado AirSupply
+    if (airResult?._erro) {
+      data.erros = data.erros || [];
+      data.erros.push({ transportadora: 'AIRSUPPLY', erro: airResult.erro });
+    } else if (airResult?.valorTotal != null) {
+      data.resultados = data.resultados || [];
+      data.resultados.push(airResult);
     }
 
     exibirComparacao(data, valor);
