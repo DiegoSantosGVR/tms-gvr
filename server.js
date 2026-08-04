@@ -512,14 +512,36 @@ async function airsupplyCotacao(campos) {
     }
   }, payload);
 
-  console.log('[AIRSUPPLY] Status:', result.status, 'Body:', result.body.slice(0, 300));
+  console.log('[AIRSUPPLY] Status:', result.status);
+  console.log('[AIRSUPPLY] Body completo:', result.body.slice(0, 500));
+
+  // Se GET com body retornou 401/405, tenta POST
+  if (result.status === 401 || result.status === 405) {
+    console.log('[AIRSUPPLY] Tentando método POST...');
+    const result2 = await httpsRequest({
+      hostname: AIRSUPPLY_API.host,
+      path:     AIRSUPPLY_API.path,
+      method:   'POST',
+      headers: {
+        'Authorization': `Token ${AIRSUPPLY_API.token}`,
+        'Content-Type':  'application/json',
+        'Accept':        'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+      }
+    }, payload);
+    console.log('[AIRSUPPLY POST] Status:', result2.status, 'Body:', result2.body.slice(0, 500));
+    if (result2.status < 400) {
+      // POST funcionou — usa esse resultado
+      Object.assign(result, result2);
+    }
+  }
 
   let data;
   try { data = JSON.parse(result.body); }
-  catch { throw new Error(`AirSupply retornou resposta inválida (status ${result.status})`); }
+  catch { throw new Error(`AirSupply retornou resposta inválida (status ${result.status}). Body: ${result.body.slice(0,100)}`); }
 
   if (result.status === 429) throw new Error('AirSupply: limite de requisições atingido. Aguarde 2 segundos e tente novamente.');
-  if (result.status >= 400) throw new Error(data.message || data.error || `Erro ${result.status} AirSupply`);
+  if (result.status >= 400) throw new Error(data.message || data.error || data.errors?.[0] || `Erro ${result.status} AirSupply`);
 
   // Busca a tabela GVR — usa nome parcial para match flexível
   const lista = data.data || [];
