@@ -443,12 +443,15 @@ function parseCTe(xmlStr, filename) {
   let pesoCubado=0, pesoDeclarado=0, volumes=1, metrosCubicos=0;
   let volumeFromInfQ=false;
   Array.from(doc.getElementsByTagName('infQ')).forEach(q => {
-    const med = q.querySelector('tpMed')?.textContent?.toUpperCase() || '';
-    const val = parseFloat(q.querySelector('qCarga')?.textContent || '0');
+    const med  = q.querySelector('tpMed')?.textContent?.toUpperCase() || '';
+    const val  = parseFloat(q.querySelector('qCarga')?.textContent || '0');
+    const unid = q.querySelector('cUnid')?.textContent?.trim() || '';   // 00=M³, 01=KG, 03=UNIDADE
     if (med.includes('CUBADO'))                              pesoCubado    = val;
     if (med.includes('DECLARADO')||med.includes('REAL'))     pesoDeclarado = val;
-    if (med.includes('VOLUME')||med.includes('CAIXA'))     { volumes = Math.max(volumes,Math.round(val)); volumeFromInfQ = true; }
-    if (med.includes('METROS')||med.includes('M3'))          metrosCubicos = val;
+    // Volume = contagem de peças: só conta quando NÃO está medido em m³ (cUnid 00).
+    // Evita que um campo "Volume" em m³ (ex.: AIRSUPPLY) seja lido como quantidade.
+    if ((med.includes('VOLUME')||med.includes('CAIXA')) && unid !== '00') { volumes = Math.max(volumes,Math.round(val)); volumeFromInfQ = true; }
+    if (med.includes('METROS')||med.includes('M3')||(med.includes('VOLUME')&&unid==='00')) metrosCubicos = val;
     if (med.includes('BASE')&&pesoDeclarado===0)             pesoDeclarado = val;
   });
 
