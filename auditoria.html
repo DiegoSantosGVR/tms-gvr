@@ -439,16 +439,30 @@ function parseCTe(xmlStr, filename) {
   const vComps = Array.from(doc.getElementsByTagName('vComp')).map(e=>parseFloat(e.textContent||'0'));
   const componentes = xNomes.map((n,i)=>({nome:n, valor:vComps[i]||0}));
 
-  // Pesos
+  // Pesos e volumes
   let pesoCubado=0, pesoDeclarado=0, volumes=1, metrosCubicos=0;
+  let volumeFromInfQ=false;
   Array.from(doc.getElementsByTagName('infQ')).forEach(q => {
     const med = q.querySelector('tpMed')?.textContent?.toUpperCase() || '';
     const val = parseFloat(q.querySelector('qCarga')?.textContent || '0');
     if (med.includes('CUBADO'))                              pesoCubado    = val;
     if (med.includes('DECLARADO')||med.includes('REAL'))     pesoDeclarado = val;
-    if (med.includes('VOLUME')||med.includes('CAIXA'))       volumes       = Math.max(volumes,Math.round(val));
+    if (med.includes('VOLUME')||med.includes('CAIXA'))     { volumes = Math.max(volumes,Math.round(val)); volumeFromInfQ = true; }
     if (med.includes('METROS')||med.includes('M3'))          metrosCubicos = val;
     if (med.includes('BASE')&&pesoDeclarado===0)             pesoDeclarado = val;
+  });
+
+  // Fallback via ObsCont — algumas transportadoras (ex.: MOVVI) colocam
+  // volume e pesos em <ObsCont xCampo="..."> em vez de <infQ>.
+  // Só preenche o que o infQ NÃO trouxe, então não altera os demais casos.
+  Array.from(doc.getElementsByTagName('ObsCont')).forEach(o => {
+    const campo = (o.getAttribute('xCampo')||'').toUpperCase();
+    const num   = parseFloat((o.querySelector('xTexto')?.textContent || '').replace(',','.')) || 0;
+    if (!campo || !num) return;
+    if ((campo.includes('QTDEVOLUME')||campo.includes('QTDVOLUME')||campo.includes('VOLUME')) && !volumeFromInfQ)
+      volumes = Math.max(volumes, Math.round(num));
+    if (campo.includes('CUBADO')   && pesoCubado===0)    pesoCubado    = num;
+    if (campo.includes('AFERIDO')  && pesoDeclarado===0) pesoDeclarado = num;
   });
 
   const vCarga      = parseFloat(get('vCarga') || '0');
