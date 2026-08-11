@@ -566,6 +566,38 @@ function limparNum(v){return String(v).replace(/\D/g,'');}
 // switchTab removido — formulário unificado sem abas
 function formatarData(d){if(!d)return'—';if(typeof d==='string'&&d.match(/^\d{2}\/\d{2}\/\d{4}$/))return d;if(typeof d==='string'&&d.match(/^\d{8}$/))return d.slice(6)+'/'+d.slice(4,6)+'/'+d.slice(0,4);try{const dt=new Date(d);if(!isNaN(dt))return dt.toLocaleDateString('pt-BR');}catch{}return String(d);}
 
+// ── NORMALIZAÇÃO DE PRAZO (dias úteis ⇄ data) ──
+// Feriados NACIONAIS 2026 (dd/mm/aaaa). Inclui Carnaval como feriado de fato
+// logístico. Não cobre feriados municipais/estaduais — edite se precisar.
+const FERIADOS_2026 = new Set([
+  '01/01/2026','16/02/2026','17/02/2026','03/04/2026','21/04/2026','01/05/2026',
+  '04/06/2026','07/09/2026','12/10/2026','02/11/2026','15/11/2026','20/11/2026','25/12/2026'
+]);
+function _fmtDMA(dt){return String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0')+'/'+dt.getFullYear();}
+function ehDiaUtil(dt){const g=dt.getDay();return g!==0&&g!==6&&!FERIADOS_2026.has(_fmtDMA(dt));}
+function addDiasUteis(base,n){const d=new Date(base.getFullYear(),base.getMonth(),base.getDate());let c=0;while(c<n){d.setDate(d.getDate()+1);if(ehDiaUtil(d))c++;}return d;}
+function contarDiasUteis(base,alvo){const d=new Date(base.getFullYear(),base.getMonth(),base.getDate());const fim=new Date(alvo.getFullYear(),alvo.getMonth(),alvo.getDate());let c=0;while(d<fim){d.setDate(d.getDate()+1);if(ehDiaUtil(d))c++;}return c;}
+function parseDataBR(s){const m=String(s).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);return m?new Date(+m[3],+m[2]-1,+m[1]):null;}
+// Retorna {dias, dataFmt} unificados a partir de r.diasUteis (nº) ou r.prazoEntrega (data)
+function normalizarPrazo(r){
+  const hoje=new Date();
+  if(typeof r.diasUteis==='number'){
+    return {dias:r.diasUteis, dataFmt:_fmtDMA(addDiasUteis(hoje,r.diasUteis))};
+  }
+  const dt=parseDataBR(r.prazoEntrega);
+  if(dt){
+    return {dias:contarDiasUteis(hoje,dt), dataFmt:_fmtDMA(dt)};
+  }
+  return {dias:null, dataFmt:r.prazoEntrega?formatarData(r.prazoEntrega):null};
+}
+function prazoHTML(r){
+  const {dias,dataFmt}=normalizarPrazo(r);
+  if(dias!=null&&dataFmt) return `${dias} dias úteis<br><span style="font-size:11px;color:var(--gray-500)">prev. ${dataFmt}</span>`;
+  if(dias!=null) return `${dias} dias úteis`;
+  if(dataFmt) return dataFmt;
+  return '—';
+}
+
 // ── CAIXAS ──
 function adicionarCaixa(){
   const id=++caixaIdCounter;
@@ -722,7 +754,7 @@ function exibirComparacao(data,valorNF){
       if(nome==='MOVVI'&&r.regraAplicada){
         extraRow=`<div class="compare-row"><span class="lbl">Regra aplicada</span><span class="val" style="font-size:12px">${r.regraAplicada}</span></div>`;
       }
-      div.innerHTML=`<div class="compare-header ${nome.toLowerCase()}"><span>${nome}</span>${isMelhor?'<span class="badge-melhor">✓ Melhor</span>':''}</div><div class="compare-body"><div class="compare-row"><span class="lbl">Valor total</span><span class="val ${corVal}">${fmt(r.valorTotal)}</span></div><div class="compare-row"><span class="lbl">Frete</span><span class="val">${fmt(r.valorFrete)}</span></div><div class="compare-row"><span class="lbl">Prazo</span><span class="val">${formatarData(r.prazoEntrega)}</span></div>${r.pesoCobrado?`<div class="compare-row"><span class="lbl">Peso cobrado</span><span class="val">${r.pesoCobrado.toFixed(2)} kg</span></div>`:''}${kpi?`<div class="compare-row"><span class="lbl">Frete/NF%</span><span class="val" style="color:${parseFloat(kpi)>15?'var(--red)':'var(--green)'}">${kpi}%</span></div>`:''}<div class="compare-row"><span class="lbl">Nº cotação</span><span class="val" style="font-size:12px;font-family:monospace">${r.numeroCotacao||'—'}</span></div>${extraRow}</div>`;
+      div.innerHTML=`<div class="compare-header ${nome.toLowerCase()}"><span>${nome}</span>${isMelhor?'<span class="badge-melhor">✓ Melhor</span>':''}</div><div class="compare-body"><div class="compare-row"><span class="lbl">Valor total</span><span class="val ${corVal}">${fmt(r.valorTotal)}</span></div><div class="compare-row"><span class="lbl">Frete</span><span class="val">${fmt(r.valorFrete)}</span></div><div class="compare-row"><span class="lbl">Prazo</span><span class="val">${prazoHTML(r)}</span></div>${r.pesoCobrado?`<div class="compare-row"><span class="lbl">Peso cobrado</span><span class="val">${r.pesoCobrado.toFixed(2)} kg</span></div>`:''}${kpi?`<div class="compare-row"><span class="lbl">Frete/NF%</span><span class="val" style="color:${parseFloat(kpi)>15?'var(--red)':'var(--green)'}">${kpi}%</span></div>`:''}<div class="compare-row"><span class="lbl">Nº cotação</span><span class="val" style="font-size:12px;font-family:monospace">${r.numeroCotacao||'—'}</span></div>${extraRow}</div>`;
     } else {
       const msg=e?'⚠️ '+e.erro:'Credenciais não informadas.';
       const cls=e?.erro?.includes('não atendida')||e?.erro?.includes('Região')?'compare-nao-atend':'compare-erro';
@@ -736,7 +768,8 @@ function exibirComparacao(data,valorNF){
     const best=comValor[0];
     const kpi=best.valorTotal&&valorNF>0?(best.valorTotal/valorNF*100).toFixed(2):null;
     document.getElementById('k-frete').textContent=fmt(best.valorTotal);
-    document.getElementById('k-prazo').textContent=formatarData(best.prazoEntrega);
+    const np=normalizarPrazo(best);
+    document.getElementById('k-prazo').textContent=np.dias!=null?`${np.dias} dias úteis`:(np.dataFmt||'—');
     document.getElementById('k-kpi').textContent=kpi?kpi+'%':'—';
     document.getElementById('k-kpi').className='kv'+(kpi&&parseFloat(kpi)>15?' warn':' ok');
     document.getElementById('k-economia').textContent=economia?fmt(economia):'—';
