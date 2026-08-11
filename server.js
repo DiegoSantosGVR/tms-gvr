@@ -463,6 +463,7 @@ const AIRSUPPLY_API = {
   token:      '3fe768d09b55efafd18a5d40f8bf40eb',
   cnpjRem:    '66934555001514',
   tabelaNome: 'GVR TROUSSEAU - RODO - ORIGEM SAO', // nome parcial da tabela de preço
+  fatorCubagem: 200, // kg/m³ — confirmado pela AirSupply (as demais transportadoras usam 300)
   _lastCall:  0, // controle de rate limit (2s entre chamadas)
 };
 
@@ -479,8 +480,13 @@ async function airsupplyCotacao(campos) {
   // Formata CEP com hífen (padrão da API: "13600-690")
   const fmtCEP = c => c.length === 8 ? c.slice(0,5)+'-'+c.slice(5) : c;
 
-  const pesoReal    = Number(campos.pesoReal);
-  const pesoCubado  = Number(campos.pesoCubado ?? pesoReal);
+  // Peso cubado ESPECÍFICO da AirSupply: fator 200 kg/m³ (as demais usam 300).
+  // O frontend manda metragemCubica bruta; se faltar, deriva do peso cubado 300.
+  const pesoReal = Number(campos.pesoReal);
+  const m3       = Number(campos.metragemCubica) > 0
+                     ? Number(campos.metragemCubica)
+                     : (Number(campos.pesoCubado) > 0 ? Number(campos.pesoCubado) / 300 : 0);
+  const pesoCubado  = m3 > 0 ? parseFloat((m3 * AIRSUPPLY_API.fatorCubagem).toFixed(2)) : pesoReal;
   const pesoCobrado = Math.max(pesoReal, pesoCubado);
 
   const payload = JSON.stringify({
