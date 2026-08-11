@@ -491,19 +491,22 @@ async function airsupplyCotacao(campos) {
         real_weight:             pesoCobrado,
         invoices_value:          Number(campos.valorMercadoria),
         invoices_volumes:        Number(campos.qtdVolumes) || 1,
-        sender_document:         AIRSUPPLY_API.cnpjRem,
-        recipient_document:      String(campos.cnpjDestinatario).replace(/\D/g,''),
-        // modal não enviado = rodoviário por padrão
+        // sender_document/recipient_document NÃO enviados: não constam no
+        // exemplo oficial — a seleção de tabela vem pelo token.
+        // vehicle_type/modal omitidos = rodoviário por padrão.
       }
     }
   });
 
   console.log('[AIRSUPPLY] Payload:', payload);
 
+  // Método GET com body — confirmado pelo exemplo oficial da AirSupply.
+  // O Node envia body em GET normalmente; o fetch() do browser NÃO permite,
+  // por isso a integração é obrigatoriamente server-side.
   const result = await httpsRequest({
     hostname: AIRSUPPLY_API.host,
     path:     AIRSUPPLY_API.path,
-    method:   'POST',
+    method:   'GET',
     headers: {
       'Authorization': `Token ${AIRSUPPLY_API.token}`,
       'Content-Type':  'application/json',
@@ -512,29 +515,8 @@ async function airsupplyCotacao(campos) {
     }
   }, payload);
 
-  console.log('[AIRSUPPLY] Status:', result.status);
-  console.log('[AIRSUPPLY] Body completo:', result.body.slice(0, 500));
-
-  // Se GET com body retornou 401/405, tenta POST
-  if (result.status === 401 || result.status === 405) {
-    console.log('[AIRSUPPLY] Tentando método POST...');
-    const result2 = await httpsRequest({
-      hostname: AIRSUPPLY_API.host,
-      path:     AIRSUPPLY_API.path,
-      method:   'POST',
-      headers: {
-        'Authorization': `Token ${AIRSUPPLY_API.token}`,
-        'Content-Type':  'application/json',
-        'Accept':        'application/json',
-        'Content-Length': Buffer.byteLength(payload),
-      }
-    }, payload);
-    console.log('[AIRSUPPLY POST] Status:', result2.status, 'Body:', result2.body.slice(0, 500));
-    if (result2.status < 400) {
-      // POST funcionou — usa esse resultado
-      Object.assign(result, result2);
-    }
-  }
+  console.log('[AIRSUPPLY] GET Status:', result.status);
+  console.log('[AIRSUPPLY] Body completo:', result.body.slice(0, 800));
 
   let data;
   try { data = JSON.parse(result.body); }
@@ -545,16 +527,23 @@ async function airsupplyCotacao(campos) {
 
   // Busca a tabela GVR — usa nome parcial para match flexível
   const lista = data.data || [];
+  // Loga TODAS as tabelas retornadas — use isto para cravar o nome real em produção
+  console.log('[AIRSUPPLY] Tabelas retornadas:', JSON.stringify(lista.map(i => i.summary?.customer_price_table)));
   const nomeAlvo = AIRSUPPLY_API.tabelaNome.toLowerCase();
-  const item = lista.find(i =>
+  const achou = lista.find(i =>
     (i.summary?.customer_price_table || '').toLowerCase().includes(nomeAlvo)
-  ) || lista[0]; // fallback para o primeiro se não encontrar
+  );
+  const item = achou || lista[0]; // fallback para o primeiro se não encontrar
+  if (lista.length && !achou) {
+    console.log('[AIRSUPPLY] AVISO: tabela alvo "'+AIRSUPPLY_API.tabelaNome+'" não encontrada. Usando a 1ª:', item.summary?.customer_price_table);
+  }
 
   if (!item) throw new Error('AirSupply: nenhuma tabela de preço retornada.');
 
   const valorTotal  = parseFloat(item.summary?.total || '0');
   const prazo       = item.details?.delivery_time ?? null;
-  const prazoFmt    = prazo ? `${prazo} dias úteis` : null;
+  const prazoUnid   = (item.details?.delivery_time_format || 'days') === 'days' ? 'dias' : (item.details?.delivery_time_format);
+  const prazoFmt    = prazo != null ? `${prazo} ${prazoUnid}` : null;
   const tabelaNome  = item.summary?.customer_price_table || '—';
 
   // Componentes para detalhe
