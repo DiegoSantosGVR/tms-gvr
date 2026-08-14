@@ -522,45 +522,27 @@ function normCidade(s) {
     .replace(/[^a-z0-9\s]/g,'').trim();
 }
 
-// Busca trecho na tabela Movvi (bidirecional — origem pode ser qualquer cidade atendida)
+// Busca trecho na tabela Movvi — COTAÇÃO É UNIDIRECIONAL: origem sempre São Paulo → destino.
+// Só cota se a cidade de DESTINO estiver na tabela. (A regra bidirecional SP↔X é só da auditoria.)
 function buscarMovvi(cidadeOrig, ufOrig, cidadeDest, ufDest, valorNF) {
   const tabela = getTabelaMovvi();
-
-  // Normaliza cidades
-  const nOrig = normCidade(cidadeOrig);
   const nDest = normCidade(cidadeDest);
 
-  // Verifica se ambas as UFs são atendidas
-  if (!UFS_ATENDIDAS.has(ufOrig) || !UFS_ATENDIDAS.has(ufDest)) {
+  // UF de destino precisa ser atendida (origem SP é sempre atendida)
+  if (!UFS_ATENDIDAS.has(ufDest)) {
     return { status: 'nao_atendido' };
   }
 
-  // Tabela bidirecional — busca cidade destino e cidade origem na tabela
-  // A tabela tem São Paulo como referência, mas vale nos dois sentidos
-  const buscar = (nome) => tabela.find(r => normCidade(r.cidade) === nome);
-  const regDest = buscar(nDest);
-  const regOrig = buscar(nOrig);
-
-  // Ambas as cidades precisam estar na tabela OU uma delas precisa ser São Paulo
-  // Regra: se destino não está cadastrado → alerta para cadastrar destino
-  //        se origem não está cadastrada  → alerta para cadastrar origem
-  //        só calcula quando pelo menos uma das cidades está na tabela
-  //        (tabela é referência SP↔X, então basta uma das cidades estar cadastrada)
-  const reg = regDest || regOrig;
+  // Busca SOMENTE a cidade de destino — não cai mais na origem.
+  const reg = tabela.find(r => normCidade(r.cidade) === nDest);
 
   if (!reg) {
-    // Nenhuma das cidades está cadastrada — pede a cidade de destino
+    // Destino não cadastrado → não cota (aparece como erro suave na comparação)
     return { status: 'cidade_nao_cadastrada', cidade: cidadeDest, uf: ufDest };
   }
 
-  // Se tem as duas, usa a que tem o maior frete (mais conservador)
-  // Se tem só uma, usa ela (tabela bidirecional)
-  const regFinal = (regDest && regOrig)
-    ? (regDest.min >= regOrig.min ? regDest : regOrig)
-    : reg;
-
-  const porPct   = parseFloat((valorNF * regFinal.pct / 100).toFixed(2));
-  const valorFinal = Math.max(porPct, regFinal.min);
+  const porPct     = parseFloat((valorNF * reg.pct / 100).toFixed(2));
+  const valorFinal = Math.max(porPct, reg.min);
 
   return {
     status: 'ok',
@@ -571,10 +553,10 @@ function buscarMovvi(cidadeOrig, ufOrig, cidadeDest, ufDest, valorNF) {
     valorTotal:     valorFinal,
     prazoEntrega:   null,
     pesoCobrado:    null,
-    freteMinimo:    regFinal.min,
-    pctAplicado:    regFinal.pct,
+    freteMinimo:    reg.min,
+    pctAplicado:    reg.pct,
     valorPorPct:    porPct,
-    regraAplicada:  valorFinal === porPct ? `${regFinal.pct}% × NF` : `Mínimo R$ ${regFinal.min.toFixed(2)}`,
+    regraAplicada:  valorFinal === porPct ? `${reg.pct}% × NF` : `Mínimo R$ ${reg.min.toFixed(2)}`,
   };
 }
 
@@ -1634,15 +1616,11 @@ async function fazerCotacao(){
   let movviResult = null;
 
   if (dadosOrig && dadosDest) {
-    const res = buscarMovvi(dadosOrig.cidade, dadosOrig.uf, dadosDest.cidade, dadosDest.uf, valor);
-    if (res.status === 'cidade_nao_cadastrada') {
-      _pendingMovviCotacao = campos;
-      abrirModalMovvi(res.cidade, res.uf);
-      return; // Para aqui — recota após cadastro
-    }
-    movviResult = res;
+    // Cotação unidirecional SP → destino. Se o destino não estiver na tabela,
+    // a MOVVI simplesmente não cota (vira erro suave abaixo) — sem modal.
+    movviResult = buscarMovvi(dadosOrig.cidade, dadosOrig.uf, dadosDest.cidade, dadosDest.uf, valor);
   } else {
-    // CEPs não resolvidos — tenta buscar agora
+    // CEPs não resolvidos
     movviResult = { status: 'sem_cidade' };
   }
   _pendingMovviCotacao = null;
@@ -1670,9 +1648,12 @@ async function fazerCotacao(){
     if (movviResult?.status === 'ok') {
       data.resultados = data.resultados || [];
       data.resultados.push(movviResult);
-    } else if (movviResult?.status === 'nao_atendido' || movviResult?.status === 'sem_cidade') {
+    } else if (movviResult?.status === 'nao_atendido' || movviResult?.status === 'sem_cidade' || movviResult?.status === 'cidade_nao_cadastrada') {
       data.erros = data.erros || [];
-      data.erros.push({transportadora:'MOVVI', erro: movviResult.status==='nao_atendido' ? 'Região não atendida pela Movvi' : 'Informe o CEP corretamente para cotar a Movvi'});
+      const msgMovvi = movviResult.status === 'nao_atendido'         ? 'Região não atendida pela Movvi'
+                     : movviResult.status === 'cidade_nao_cadastrada' ? `Cidade ${movviResult.cidade}/${movviResult.uf} não cadastrada na tabela Movvi`
+                     : 'Informe o CEP corretamente para cotar a Movvi';
+      data.erros.push({transportadora:'MOVVI', erro: msgMovvi});
     }
 
     // AIRSUPPLY agora vem do backend (server-side): já está em data.resultados/data.erros.
@@ -1733,7 +1714,8 @@ function exibirComparacao(data,valorNF,campos,rota){
       div.innerHTML=`<div class="compare-header ${nome.toLowerCase()}"><span>${nome==='CRUZEIRO'?'CRUZEIRO DO SUL':nome}</span>${isMelhor?'<span class="badge-melhor">✓ Melhor</span>':''}</div><div class="compare-body"><div class="compare-row"><span class="lbl">Valor total</span><span class="val ${corVal}">${fmt(r.valorTotal)}</span></div><div class="compare-row"><span class="lbl">Frete</span><span class="val">${fmt(r.valorFrete)}</span></div><div class="compare-row"><span class="lbl">Prazo</span><span class="val">${prazoHTML(r)}</span></div>${r.pesoCobrado?`<div class="compare-row"><span class="lbl">Peso cobrado</span><span class="val">${r.pesoCobrado.toFixed(2)} kg</span></div>`:''}${kpi?`<div class="compare-row"><span class="lbl">Frete/NF%</span><span class="val" style="color:${parseFloat(kpi)>15?'var(--red)':'var(--green)'}">${kpi}%</span></div>`:''}<div class="compare-row"><span class="lbl">Nº cotação</span><span class="val" style="font-size:12px;font-family:monospace">${r.numeroCotacao||'—'}</span></div>${extraRow}</div>`;
     } else {
       const msg=e?'⚠️ '+e.erro:'Credenciais não informadas.';
-      const cls=e?.erro?.includes('não atendida')||e?.erro?.includes('Região')?'compare-nao-atend':'compare-erro';
+      const _soft=/não atendida|Região|não cadastrada|não consta/i;
+      const cls=_soft.test(e?.erro||'')?'compare-nao-atend':'compare-erro';
       div.innerHTML=`<div class="compare-header ${nome.toLowerCase()}">${nome==='CRUZEIRO'?'CRUZEIRO DO SUL':nome}</div><div class="${cls}">${msg}</div>`;
       if(e?.erro?.includes('não atendida'))div.classList.add('nao-atendido');
     }
