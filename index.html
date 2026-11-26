@@ -89,6 +89,8 @@
   .compare-header.movvi     { background: #FFF8E7; color: #7c4a00; }
   .compare-header.cruzeiro  { background: #EAF7EE; color: #14532d; }
   .compare-header.airsupply { background: #F0F4FF; color: #1e3a8a; }
+  .rep-contato { padding: 5px 16px; font-size: 11.5px; color: #64748b; background: #fafbfc; border-bottom: 1px solid #eef1f4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  select.campo-fixo { opacity: 1; color: var(--gray-700, #334155); background-color: #f4f6f8; cursor: not-allowed; -webkit-text-fill-color: var(--gray-700, #334155); }
   .compare-row .val.blue-val { color: #1e3a8a; font-size: 18px; }
   .compare-body { padding: 16px; background: #fff; }
   .compare-row { display: flex; justify-content: space-between; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--gray-100); font-size: 13px; }
@@ -239,7 +241,6 @@
     <div class="login-header">
       <div class="mark">TMS GVR</div>
       <div class="sub">Sistema de cotação de frete — JAMEF · MOVVI · CRUZEIRO · BRASPRESS · AIRSUPPLY</div>
-      <div style="font-size:11px;color:var(--gray-400);margin-top:6px">Desenvolvido por Diego Santos · GVR Home</div>
     </div>
     <div class="card">
       <div class="card-header blue">🔐 Credenciais de acesso</div>
@@ -352,9 +353,8 @@
           </div>
           <div class="field">
             <label>Tipo de frete</label>
-            <select id="f-tipo-frete">
+            <select id="f-tipo-frete" disabled class="campo-fixo" title="Fixo: CIF">
               <option value="1">CIF — por conta do remetente</option>
-              <option value="2">FOB — por conta do destinatário</option>
             </select>
           </div>
           <div class="field">
@@ -398,9 +398,8 @@
           </div>
           <div class="field">
             <label>Modal</label>
-            <select id="f-modal">
+            <select id="f-modal" disabled class="campo-fixo" title="Fixo: Rodoviário">
               <option value="R">Rodoviário</option>
-              <option value="A">Aéreo</option>
             </select>
           </div>
         </div>
@@ -1697,6 +1696,15 @@ function exibirComparacao(data,valorNF,campos,rota){
 
   const TRANSP_ORDER = ['JAMEF','MOVVI','CRUZEIRO','BRASPRESS','AIRSUPPLY'];
   const COR_VAL = {JAMEF:'green', MOVVI:'org-val', CRUZEIRO:'green', BRASPRESS:'red-val', AIRSUPPLY:'blue-val'};
+  // Contato do representante de cada transportadora (chave = nome interno)
+  const CONTATO_REP = {
+    JAMEF:     { nome:'Rafael Ribeiro', tel:'(11) 96630-1526' },
+    BRASPRESS: { nome:'Helena Lima',    tel:'(11) 97624-5839' },
+    MOVVI:     { nome:'Denise Alencar', tel:'(19) 99998-3915' },
+    AIRSUPPLY: { nome:'Camila Soares',  tel:'(11) 98805-1983' },
+    CRUZEIRO:  { nome:'Thalia Pereira', tel:'(11) 95224-7207' },
+  };
+  const repHTML = n => { const c=CONTATO_REP[n]; return c?`<div class="rep-contato">👤 ${c.nome} · ${c.tel}</div>`:''; };
 
   TRANSP_ORDER.forEach(nome=>{
     const r=resultados.find(x=>x.transportadora===nome);
@@ -1711,12 +1719,12 @@ function exibirComparacao(data,valorNF,campos,rota){
       if((nome==='MOVVI'||nome==='CRUZEIRO')&&r.regraAplicada){
         extraRow=`<div class="compare-row"><span class="lbl">Regra aplicada</span><span class="val" style="font-size:12px">${r.regraAplicada}</span></div>`;
       }
-      div.innerHTML=`<div class="compare-header ${nome.toLowerCase()}"><span>${nome==='CRUZEIRO'?'CRUZEIRO DO SUL':nome}</span>${isMelhor?'<span class="badge-melhor">✓ Melhor</span>':''}</div><div class="compare-body"><div class="compare-row"><span class="lbl">Valor total</span><span class="val ${corVal}">${fmt(r.valorTotal)}</span></div><div class="compare-row"><span class="lbl">Frete</span><span class="val">${fmt(r.valorFrete)}</span></div><div class="compare-row"><span class="lbl">Prazo</span><span class="val">${prazoHTML(r)}</span></div>${r.pesoCobrado?`<div class="compare-row"><span class="lbl">Peso cobrado</span><span class="val">${r.pesoCobrado.toFixed(2)} kg</span></div>`:''}${kpi?`<div class="compare-row"><span class="lbl">Frete/NF%</span><span class="val" style="color:${parseFloat(kpi)>15?'var(--red)':'var(--green)'}">${kpi}%</span></div>`:''}<div class="compare-row"><span class="lbl">Nº cotação</span><span class="val" style="font-size:12px;font-family:monospace">${r.numeroCotacao||'—'}</span></div>${extraRow}</div>`;
+      div.innerHTML=`<div class="compare-header ${nome.toLowerCase()}"><span>${nome==='CRUZEIRO'?'CRUZEIRO DO SUL':nome}</span>${isMelhor?'<span class="badge-melhor">✓ Melhor</span>':''}</div>${repHTML(nome)}<div class="compare-body"><div class="compare-row"><span class="lbl">Valor total</span><span class="val ${corVal}">${fmt(r.valorTotal)}</span></div><div class="compare-row"><span class="lbl">Frete</span><span class="val">${fmt(r.valorFrete)}</span></div><div class="compare-row"><span class="lbl">Prazo</span><span class="val">${prazoHTML(r)}</span></div>${r.pesoCobrado?`<div class="compare-row"><span class="lbl">Peso cobrado</span><span class="val">${r.pesoCobrado.toFixed(2)} kg</span></div>`:''}${kpi?`<div class="compare-row"><span class="lbl">Frete/NF%</span><span class="val" style="color:${parseFloat(kpi)>15?'var(--red)':'var(--green)'}">${kpi}%</span></div>`:''}<div class="compare-row"><span class="lbl">Nº cotação</span><span class="val" style="font-size:12px;font-family:monospace">${r.numeroCotacao||'—'}</span></div>${extraRow}</div>`;
     } else {
       const msg=e?'⚠️ '+e.erro:'Credenciais não informadas.';
       const _soft=/não atendida|Região|não cadastrada|não consta/i;
       const cls=_soft.test(e?.erro||'')?'compare-nao-atend':'compare-erro';
-      div.innerHTML=`<div class="compare-header ${nome.toLowerCase()}">${nome==='CRUZEIRO'?'CRUZEIRO DO SUL':nome}</div><div class="${cls}">${msg}</div>`;
+      div.innerHTML=`<div class="compare-header ${nome.toLowerCase()}">${nome==='CRUZEIRO'?'CRUZEIRO DO SUL':nome}</div>${repHTML(nome)}<div class="${cls}">${msg}</div>`;
       if(e?.erro?.includes('não atendida'))div.classList.add('nao-atendido');
     }
     grid.appendChild(div);
